@@ -176,9 +176,6 @@ krypt_asn1_template_alloc(VALUE klass)
     return Data_Wrap_Struct(klass, krypt_asn1_template_mark, krypt_asn1_template_free, 0);
 }
 
-/* traverse_cb muss auf template arbeiten.
- * Dann immer die Werte in Paaren abarbeiten - Container plus Value */
-
 static VALUE
 int_traverse_template(VALUE vt, 
 		      VALUE name, 
@@ -264,24 +261,40 @@ krypt_asn1_template_get_callback(VALUE self, VALUE name)
     VALUE ret = Qnil;
     ID ivname = SYM2ID(name);
 
-    if (ivname == sKrypt_IV_TAG || ivname == sKrypt_IV_TYPE)
-	return int_return_choice_attr(self, ivname);
-
     if (!krypt_asn1_template_get_cb_value(self, ivname, &ret))
 	krypt_error_raise(eKryptASN1Error, "Could not access %s", rb_id2name(ivname));
     return ret;
 }
 
 VALUE
+krypt_asn1_template_get_callback_choice(VALUE self, VALUE name)
+{
+    VALUE ret = Qnil;
+    ID ivname = SYM2ID(name);
+
+    if (ivname == sKrypt_IV_TAG || ivname == sKrypt_IV_TYPE)
+	return int_return_choice_attr(self, ivname);
+
+    return krypt_asn1_template_get_callback(self, name);
+}
+
+VALUE
 krypt_asn1_template_set_callback(VALUE self, VALUE name, VALUE value)
+{
+    ID ivname = SYM2ID(name);
+    krypt_asn1_template_set_cb_value(self, ivname, value);
+    return value;
+}
+
+VALUE
+krypt_asn1_template_set_callback_choice(VALUE self, VALUE name, VALUE value)
 {
     ID ivname = SYM2ID(name);
 
     if (ivname == sKrypt_IV_TAG || ivname == sKrypt_IV_TYPE)
 	return rb_ivar_set(self, ivname, value);
 
-    krypt_asn1_template_set_cb_value(self, ivname, value);
-    return value;
+    return krypt_asn1_template_set_callback(self, name, value);
 }
 
 VALUE
@@ -420,6 +433,8 @@ Init_krypt_asn1_template(void)
     rb_define_method(mKryptASN1Template, "initialize", krypt_asn1_template_initialize, 0);
     rb_define_method(mKryptASN1Template, "_get_callback", krypt_asn1_template_get_callback, 1);
     rb_define_method(mKryptASN1Template, "_set_callback", krypt_asn1_template_set_callback, 2);
+    rb_define_method(mKryptASN1Template, "_get_callback_choice", krypt_asn1_template_get_callback_choice, 1);
+    rb_define_method(mKryptASN1Template, "_set_callback_choice", krypt_asn1_template_set_callback_choice, 2);
     rb_define_method(mKryptASN1Template, "to_der", krypt_asn1_template_to_der, 0);
     rb_define_method(mKryptASN1Template, "<=>", krypt_asn1_template_cmp, 1);
     rb_define_method(mKryptASN1Template, "__inspect__", krypt_asn1_template_inspect, 0);
