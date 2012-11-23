@@ -36,7 +36,6 @@ extern "C" {
 #endif
 
 extern VALUE mKrypt;
-
 extern VALUE eKryptError;
 
 extern ID sKrypt_ID_TO_DER;
@@ -47,10 +46,8 @@ extern ID sKrypt_ID_SORT_BANG;
 extern ID sKrypt_ID_SORT;
 
 /** krypt-provider interface */
-#include "krypt_provider.h"
-
-/* the default provider to be used for low-level primitives */
-extern krypt_provider *krypt_default_provider;
+#include "krypt-provider.h"
+#include "krypt_provider-internal.h"
 
 /** krypt-core headers **/
 #include "krypt_error.h"
