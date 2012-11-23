@@ -13,8 +13,14 @@
 #ifndef _KRYPT_PROVIDER_H_
 #define _KRYPT_PROVIDER_H_
 
+
+#ifndef _RSTRING_NOT_MODIFIED
 #define RSTRING_NOT_MODIFIED 1
+#endif
+
+#ifndef RUBY_READONLY_STRING
 #define RUBY_READONLY_STRING 1
+#endif
 
 #include <ruby.h>
 
@@ -47,7 +53,10 @@ struct krypt_provider_st {
     krypt_md *(*md_new_name)(krypt_provider *provider, const char *name);
 };
 
-extern krypt_provider *krypt_provider_get_default(void);
+/* Can be called from within a provider implementation to indicate errors */
 void krypt_error_add(const char * format, ...);
+
+/* May be used to register a singleton provider upon initialization */
+void krypt_provider_register(krypt_provider *provider);
 
 #endif /* _KRYPT_PROVIDER_H_ */

@@ -269,7 +269,6 @@ krypt_asn1_template_get_callback(VALUE self, VALUE name)
 VALUE
 krypt_asn1_template_get_callback_choice(VALUE self, VALUE name)
 {
-    VALUE ret = Qnil;
     ID ivname = SYM2ID(name);
 
     if (ivname == sKrypt_IV_TAG || ivname == sKrypt_IV_TYPE)

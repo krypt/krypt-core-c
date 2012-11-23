@@ -15,5 +15,5 @@ See the file 'LICENSE' for further details.
 
 =end
 
-require 'krypt-provider'
 require 'kryptcore.so'
+require 'krypt-provider-openssl'

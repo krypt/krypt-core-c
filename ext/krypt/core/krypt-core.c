@@ -20,8 +20,6 @@ ID sKrypt_ID_EACH;
 ID sKrypt_ID_EQUALS;
 ID sKrypt_ID_SORT_BANG, sKrypt_ID_SORT;
 
-krypt_provider *krypt_default_provider;
-
 VALUE
 krypt_to_der(VALUE obj)
 {
@@ -78,9 +76,8 @@ krypt_compute_twos_complement(unsigned char *dest, unsigned char *src, size_t le
 void 
 Init_kryptcore(void)
 {
-    mKrypt = rb_define_module("Krypt");
-
-    eKryptError = rb_define_class_under(mKrypt, "KryptError", rb_eStandardError);
+    mKrypt = rb_path2class("Krypt");
+    eKryptError = rb_path2class("Krypt::Error");
 
     sKrypt_ID_TO_DER = rb_intern("to_der");
     sKrypt_ID_TO_PEM = rb_intern("to_pem");
@@ -89,15 +86,10 @@ Init_kryptcore(void)
     sKrypt_ID_SORT_BANG = rb_intern("sort!");
     sKrypt_ID_SORT = rb_intern("sort");
 
-    /* Initialize the default provider */
-    krypt_default_provider = krypt_provider_get_default();
-    if (!krypt_default_provider) {
-	rb_raise(rb_eRuntimeError, "Could not initialize default provider");
-    }
-
     /* Init components */
     Init_krypt_io();
     Init_krypt_asn1();
+    Init_krypt_native_provider();
     Init_krypt_digest();
 
     /* Init per VM, just a precaution */
