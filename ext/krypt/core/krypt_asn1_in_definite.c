@@ -67,10 +67,10 @@ int_definite_read(binyo_instream *instream, uint8_t *buf, size_t len)
     
     int_safe_cast(in, instream);
 
-    if (!buf) return 0;
+    if (!buf) return BINYO_IO_READ_ERR;
 
     if (in->num_read == in->max_read)
-	return -1;
+	return BINYO_IO_READ_EOF;
 
     if (in->max_read - in->num_read < len)
 	to_read = in->max_read - in->num_read;
@@ -78,10 +78,10 @@ int_definite_read(binyo_instream *instream, uint8_t *buf, size_t len)
 	to_read = len;
 
     r = binyo_instream_read(in->inner, buf, to_read);
-    if (r <= -1) return -2;
+    if (r == BINYO_IO_READ_ERR) return BINYO_IO_READ_ERR;
     if (in->num_read >= SIZE_MAX - r) {
 	krypt_error_add("Stream too large");
-	return -2;
+	return BINYO_IO_READ_ERR;
     }
 
     in->num_read += r;
@@ -109,13 +109,13 @@ int_definite_seek(binyo_instream *instream, off_t offset, int whence)
 	    break;
 	default:
 	    krypt_error_add("Unknown whence: %d", whence);
-	    return 0;
+	    return BINYO_ERR;
     }
     
     numread = in->num_read;
     if (numread + real_off < 0 || numread + real_off >= (long)in->max_read) {
 	krypt_error_add("Invalid seek position: %ld", numread + real_off);
-	return 0;
+	return BINYO_ERR;
     }
 
     return binyo_instream_seek(in->inner, offset, whence);

@@ -60,14 +60,6 @@ struct binyo_outstream_interface_st {
     void (*free)(binyo_outstream*);
 };
 
-#ifdef _WIN32
-#define binyo_last_sys_error()	GetLastError()
-#define binyo_clear_sys_error()	SetLastError(0)
-#else
-#define binyo_last_sys_error()	errno
-#define binyo_clear_sys_error()	errno=0
-#endif
-
 #define binyo_safe_cast_stream(out, in, t, ptype, stype)	        \
     do {	                					\
         if (!(in))		                       			\
@@ -83,8 +75,6 @@ struct binyo_outstream_interface_st {
 
 #define binyo_safe_cast_outstream(out, in, type, ptrtype)	binyo_safe_cast_stream((out), (in), (type), ptrtype, binyo_outstream)
 #define binyo_safe_cast_instream(out, in, type, ptrtype)	binyo_safe_cast_stream((out), (in), (type), ptrtype, binyo_instream)
-
-void binyo_add_io_error(void);
 
 ssize_t binyo_instream_read(binyo_instream *in, uint8_t *buf, size_t len);
 int binyo_instream_rb_read(binyo_instream *in, VALUE vlen, VALUE vbuf, VALUE *out);
@@ -111,7 +101,6 @@ void binyo_outstream_mark(binyo_outstream *in);
 void binyo_outstream_free(binyo_outstream *out);
 
 size_t binyo_outstream_bytes_get_bytes_free(binyo_outstream *outstream, uint8_t **bytes);
-VALUE binyo_outstream_string_build(binyo_outstream *outstream);
 
 binyo_outstream *binyo_outstream_new_fd(int fd);
 binyo_outstream *binyo_outstream_new_fd_io(VALUE io);
@@ -120,8 +109,6 @@ binyo_outstream *binyo_outstream_new_bytes_size(size_t size);
 binyo_outstream *binyo_outstream_new_bytes_prealloc(uint8_t *b, size_t len);
 binyo_outstream *binyo_outstream_new_io_generic(VALUE io);
 binyo_outstream *binyo_outstream_new_value(VALUE value);
-binyo_outstream *binyo_outstream_new_string(void);
-binyo_outstream *binyo_outstream_new_string_size(size_t size);
 
 #endif /* _BINYO_IO_H_ */
 
