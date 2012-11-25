@@ -710,6 +710,17 @@ do {								\
     (t) = (time_t) tmp;						\
 } while (0)
 
+#define int_raw_time_to_cstring(bytes, len, out)		\
+do {								\
+    /* make sure input to sscanf is a zero-terminated string */ \
+    int i;							\
+    (out) = ALLOCA_N(char, (len) + 1);				\
+    for (i=0; i < (len) + 1; i++) {				\
+	(out)[i] = (char) (bytes)[i];				\
+    }								\
+    (out)[(len)] = '\0';					\
+} while (0)		
+
 static int
 int_encode_utc_time(VALUE value, uint8_t **out, size_t *len)
 {
@@ -748,7 +759,6 @@ int_parse_utc_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
     char *cstr;
-    int i;
     struct tm tm = { 0 };
 
     if (len != 13) {
@@ -756,12 +766,7 @@ int_parse_utc_time(uint8_t *bytes, size_t len, VALUE *out)
 	return 0;
     }
 
-    /* make sure input to sscanf is a zero-terminated string */
-    cstr = ALLOCA_N(char, 14);
-    for (i=0; i < 14; i++) {
-	cstr[i] = (char) bytes[i];
-    }
-    cstr[13] = '\0';
+    int_raw_time_to_cstring(bytes, 13, cstr);
 
     if (sscanf((const char *) cstr,
 		"%2d%2d%2d%2d%2d%2dZ",
@@ -827,7 +832,6 @@ int_parse_generalized_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
     char *cstr;
-    int i;
     struct tm tm = { 0 };
 
     if (len != 15) {
@@ -835,12 +839,7 @@ int_parse_generalized_time(uint8_t *bytes, size_t len, VALUE *out)
 	return 0;
     }
 
-    /* make sure input to sscanf is a zero-terminated string */
-    cstr = ALLOCA_N(char, 16);
-    for (i=0; i < 16; i++) {
-	cstr[i] = (char) bytes[i];
-    }
-    cstr[15] = '\0';
+    int_raw_time_to_cstring(bytes, 15, cstr);
 
     if (sscanf((const char *)cstr,
 		"%4d%2d%2d%2d%2d%2dZ",
