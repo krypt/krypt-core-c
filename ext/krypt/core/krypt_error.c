@@ -97,6 +97,22 @@ krypt_error_add(const char *format, ...)
 }
 
 static int
+int_add_binyo_errors(char *buf, int len)
+{
+    int l = 0;
+
+    if (binyo_has_errors()) {
+	int cur_len;
+	if ((cur_len = snprintf(buf + l, len, "%s", ": ")) > 0)
+	    l += cur_len;
+       	if ((cur_len = binyo_error_message(buf + l, len)) > 0)
+	    l += cur_len;
+    }
+
+    return l;
+}
+
+static int
 int_error_msg_create(char *buf, int len, const char *format, va_list args)
 {
     int l;
@@ -114,9 +130,10 @@ int_error_msg_create(char *buf, int len, const char *format, va_list args)
 	    l += cur_len;
     }
 
+    l += int_add_binyo_errors(buf + l, len);
+
     return l;
 }
-
 
 static VALUE
 int_error_create(VALUE exception_class, const char *format, va_list args)

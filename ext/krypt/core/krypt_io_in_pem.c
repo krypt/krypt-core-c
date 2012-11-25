@@ -96,7 +96,7 @@ static int
 int_pem_seek(binyo_instream *instream, off_t offset, int whence)
 {
     /* TODO */
-    return 0;
+    return BINYO_OK;
 }
 
 static void
@@ -157,7 +157,7 @@ krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out)
 
     if (!instream) {
 	*out = NULL;
-	return 0;
+	return BINYO_ERR;
     }
 
     int_safe_cast(in, instream);
@@ -165,7 +165,7 @@ krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out)
 
     if (!b64->name) {
 	*out = NULL;
-	return 0;
+	return BINYO_ERR;
     }
 
     retlen = strlen(b64->name);
@@ -248,13 +248,15 @@ int_b64_fill(krypt_b64_buffer *in)
 
     out = binyo_outstream_new_bytes_size(BINYO_IO_BUF_SIZE + KRYPT_LINE_BUF_SIZE);
     linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
-    if (linelen < -1) return 0;
 
-    while (in->state != DONE && total < BINYO_IO_BUF_SIZE && linelen != -1) {
+    while (in->state != DONE && total < BINYO_IO_BUF_SIZE && linelen != BINYO_IO_READ_EOF) {
+	if (linelen == BINYO_IO_READ_ERR) return BINYO_ERR;
+
 	if (linelen == 0) {
 	    linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 	    continue;
 	}
+
 	switch (in->state) {
 	    case HEADER:
 		if (linebuf[0] == '-') {
@@ -276,7 +278,7 @@ int_b64_fill(krypt_b64_buffer *in)
 		else {
 		    if (!krypt_base64_buffer_decode_to(out, (uint8_t *) linebuf, 0, linelen)) {
 			krypt_error_add("Could not decode Base64 data");
-			return 0;
+			return BINYO_ERR;
 		    }
 		    total += linelen;
 		    if (total < BINYO_IO_BUF_SIZE)
@@ -304,28 +306,30 @@ int_b64_fill(krypt_b64_buffer *in)
 	}
     }
 
-    if (in->state == DONE || linelen == -1)
+    if (linelen == BINYO_IO_READ_ERR) return BINYO_ERR;
+
+    if (in->state == DONE || linelen == BINYO_IO_READ_EOF)
 	in->eof = 1;
 
-    if (linelen == -1 && in->state != DONE) {
+    if (linelen == BINYO_IO_READ_EOF && in->state != DONE) {
 	binyo_outstream_free(out);
 	switch (in->state) {
 	    case HEADER:
 		in->len = in->off = 0;
 		in->eof = 1;
-		return 1;
+		return BINYO_OK;
 	    case CONTENT:
 		krypt_error_add("PEM data ended prematurely");
-		return 0;
+		return BINYO_ERR;
 	    default:
 		krypt_error_add("Could not find matching PEM footer");
-		return 0;
+		return BINYO_ERR;
 	}
     }
 
     in->off = 0;
     in->len = binyo_outstream_bytes_get_bytes_free(out, &in->buffer);
-    return 1;
+    return BINYO_OK;
 }
 
 static size_t
@@ -351,17 +355,17 @@ int_b64_read(krypt_b64_buffer *in, uint8_t *buf, size_t len)
     while (total != len && !(in->off == in->len && in->eof)) {
 	if (in->off == in->len) {
 	    if (!int_b64_fill(in))
-		return -2;
+		return BINYO_IO_READ_ERR;
 	}
 	total += int_consume_bytes(in, buf + total, len - total);
     }
 
     if (total == 0 && in->eof)
-	return -1;
+	return BINYO_IO_READ_EOF;
 
     if (total > SSIZE_MAX) {
 	krypt_error_add("Return size too large: %ld", total);
-	return -2;
+	return BINYO_IO_READ_ERR;
     }
     return (ssize_t) total;
 }
@@ -370,7 +374,7 @@ static ssize_t
 int_pem_read(binyo_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_pem *in;
-    if (!buf) return -2;
+    if (!buf) return BINYO_IO_READ_ERR;
     int_safe_cast(in, instream);
     return int_b64_read(in->buffer, buf, len);
 }

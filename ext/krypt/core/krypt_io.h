@@ -13,6 +13,7 @@
 #if !defined(_KRYPT_IO_H_)
 #define _KRYPT_IO_H_
 
+#include "binyo-error.h"
 #include "binyo-io.h"
 #include "binyo-io-buffer.h"
 

@@ -257,7 +257,7 @@ int_next_object(binyo_instream *in, krypt_asn1_object **out)
     krypt_asn1_header *next = NULL;
     krypt_asn1_object *next_object = NULL;
     int result;
-    ssize_t value_len = 0;
+    ssize_t value_len;
     uint8_t *value = NULL;
 
     result = krypt_asn1_next_header(in, &next);
