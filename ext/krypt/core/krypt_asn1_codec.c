@@ -505,7 +505,7 @@ do {							\
 
 
 static int
-int_write_long(krypt_byte_buffer *buf, long cur)
+int_write_long(binyo_byte_buffer *buf, long cur)
 {
     int num_shifts, i, ret;
     uint8_t b;
@@ -513,7 +513,7 @@ int_write_long(krypt_byte_buffer *buf, long cur)
 
     if (cur == 0) {
 	b = 0x0;
-	if (krypt_buffer_write(buf, &b, 1) < 0) {
+	if (binyo_buffer_write(buf, &b, 1) < 0) {
 	    krypt_error_add("Writing to buffer failed");
 	    return 0;
 	}
@@ -531,7 +531,7 @@ int_write_long(krypt_byte_buffer *buf, long cur)
 	cur >>= CHAR_BIT_MINUS_ONE;
     }
 
-    if (krypt_buffer_write(buf, bytes, num_shifts) < 0) {
+    if (binyo_buffer_write(buf, bytes, num_shifts) < 0) {
 	krypt_error_add("Writing to buffer failed");
 	ret = 0;
     } else {
@@ -562,9 +562,9 @@ int_encode_object_id(uint8_t *str, size_t len, uint8_t **out, size_t *outlen)
 {
     size_t offset = 0;
     long first, second, cur;
-    krypt_byte_buffer *buffer;
+    binyo_byte_buffer *buffer;
 
-    buffer = krypt_buffer_new();
+    buffer = binyo_buffer_new();
     if ((first = int_get_sub_id(str, len, &offset)) < 0) goto error;
     int_check_first_sub_id(first);
     if ((second = int_get_sub_id(str, len, &offset)) < 0) goto error;
@@ -578,11 +578,11 @@ int_encode_object_id(uint8_t *str, size_t len, uint8_t **out, size_t *outlen)
     }
     if (cur < -1) goto error;
 
-    *outlen = krypt_buffer_get_bytes_free(buffer, out);
+    *outlen = binyo_buffer_get_bytes_free(buffer, out);
     return 1;
 
 error:
-    krypt_buffer_free(buffer);
+    binyo_buffer_free(buffer);
     return 0;
 }
 
@@ -629,12 +629,12 @@ int_set_first_sub_ids(long combined, long *first, long *second)
 do {									\
     int nl;								\
     uint8_t b = (uint8_t)'.'; 		 				\
-    if (krypt_buffer_write((buf), &b, 1) < 0) {				\
+    if (binyo_buffer_write((buf), &b, 1) < 0) {				\
 	krypt_error_add("Writing to buffer failed");			\
 	goto error;							\
     }									\
     nl = sprintf((char *) (numbuf), "%ld", (cur));			\
-    if (krypt_buffer_write((buf), (numbuf), nl) < 0) {			\
+    if (binyo_buffer_write((buf), (numbuf), nl) < 0) {			\
 	krypt_error_add("Writing to buffer failed");			\
 	goto error;							\
     }									\
@@ -645,7 +645,7 @@ int_decode_object_id(uint8_t *bytes, size_t len, VALUE *out)
 {
     long cur, first, second;
     size_t offset = 0;
-    krypt_byte_buffer *buffer;
+    binyo_byte_buffer *buffer;
     int numlen;
     uint8_t numbuf[MAX_LONG_DIGITS];
     uint8_t *retbytes;
@@ -653,7 +653,7 @@ int_decode_object_id(uint8_t *bytes, size_t len, VALUE *out)
 
     sanity_check(bytes);
     
-    buffer = krypt_buffer_new();
+    buffer = binyo_buffer_new();
     if ((cur = int_parse_sub_id(bytes, len, &offset)) == -1) {
 	krypt_error_add("Decoding OBJECT IDENTIFIER failed");
 	goto error;
@@ -667,7 +667,7 @@ int_decode_object_id(uint8_t *bytes, size_t len, VALUE *out)
     int_check_second_sub_id(second);
 
     numlen = sprintf((char *)numbuf, "%ld", first);
-    if (krypt_buffer_write(buffer, numbuf, numlen) < 0) {
+    if (binyo_buffer_write(buffer, numbuf, numlen) < 0) {
 	krypt_error_add("Writing to buffer failed");
 	goto error;
     }
@@ -678,13 +678,13 @@ int_decode_object_id(uint8_t *bytes, size_t len, VALUE *out)
     }
     if (cur < -1) goto error;
 
-    retlen = krypt_buffer_get_bytes_free(buffer, &retbytes);
+    retlen = binyo_buffer_get_bytes_free(buffer, &retbytes);
     *out = rb_str_new((const char *)retbytes, retlen);
     xfree(retbytes);
     return 1;
 
 error:
-    krypt_buffer_free(buffer);
+    binyo_buffer_free(buffer);
     return 0;
 }
 

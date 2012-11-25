@@ -15,7 +15,7 @@
 VALUE cKryptASN1Instream;
 
 typedef struct krypt_instream_adapter_st {
-    krypt_instream *in;
+    binyo_instream *in;
 } krypt_instream_adapter;
 
 static void
@@ -23,7 +23,7 @@ int_instream_adapter_mark(krypt_instream_adapter *adapter)
 {
     if (!adapter) return;
 
-    krypt_instream_mark(adapter->in);
+    binyo_instream_mark(adapter->in);
 }
 
 static void
@@ -31,7 +31,7 @@ int_instream_adapter_free(krypt_instream_adapter *adapter)
 {
     if (!adapter) return;
 
-    krypt_instream_free(adapter->in);
+    binyo_instream_free(adapter->in);
     xfree(adapter);
 }
 
@@ -52,7 +52,7 @@ do { 								\
 } while (0)
 
 VALUE
-krypt_instream_adapter_new(krypt_instream *in)
+krypt_instream_adapter_new(binyo_instream *in)
 {
     VALUE obj;
     krypt_instream_adapter *adapter;
@@ -81,7 +81,7 @@ krypt_instream_adapter_read(int argc, VALUE *argv, VALUE self)
 
     int_krypt_instream_adapter_get(self, adapter);
 
-    if (!krypt_instream_rb_read(adapter->in, vlen, vbuf, &ret))
+    if (!binyo_instream_rb_read(adapter->in, vlen, vbuf, &ret))
 	rb_raise(eKryptError, "Error reading stream");
     return ret;
 }
@@ -95,11 +95,11 @@ int_whence_for(VALUE vwhence)
 	rb_raise(rb_eArgError, "whence must be a Symbol");
 
     whence = SYM2ID(vwhence);
-    if (whence == sKrypt_ID_SEEK_CUR)
+    if (whence == sBinyo_ID_SEEK_CUR)
 	return SEEK_CUR;
-    else if (whence == sKrypt_ID_SEEK_SET)
+    else if (whence == sBinyo_ID_SEEK_SET)
 	return SEEK_SET;
-    else if (whence == sKrypt_ID_SEEK_END)
+    else if (whence == sBinyo_ID_SEEK_END)
 	return SEEK_END;
     else
 	rb_raise(eKryptASN1ParseError, "Unknown whence");
@@ -116,7 +116,7 @@ int_whence_for(VALUE vwhence)
 static VALUE
 krypt_instream_adapter_seek(int argc, VALUE *argv, VALUE self)
 {
-    VALUE n, vwhence = sKrypt_ID_SEEK_SET;
+    VALUE n, vwhence = sBinyo_ID_SEEK_SET;
     int whence;
     krypt_instream_adapter *adapter;
 
@@ -124,7 +124,7 @@ krypt_instream_adapter_seek(int argc, VALUE *argv, VALUE self)
 
     int_krypt_instream_adapter_get(self, adapter);
     whence = int_whence_for(vwhence);
-    krypt_instream_seek(adapter->in, NUM2INT(n), whence);
+    binyo_instream_seek(adapter->in, NUM2INT(n), whence);
 
     return INT2FIX(0); /* same as rb_io_seek */
 }

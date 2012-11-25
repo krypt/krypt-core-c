@@ -29,7 +29,7 @@ typedef struct krypt_pem_parse_ctx_st {
 } krypt_pem_parse_ctx;
 
 typedef struct krypt_b64_buffer_st {
-    krypt_instream *inner;
+    binyo_instream *inner;
     uint8_t *buffer;
     size_t len;
     size_t off;
@@ -39,19 +39,19 @@ typedef struct krypt_b64_buffer_st {
 } krypt_b64_buffer;
 
 typedef struct krypt_instream_pem_st {
-    krypt_instream_interface *methods;
+    binyo_instream_interface *methods;
     krypt_b64_buffer *buffer;
 } krypt_instream_pem;
 
-#define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_PEM, krypt_instream_pem)
+#define int_safe_cast(out, in)		binyo_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_PEM, krypt_instream_pem)
 
 static krypt_instream_pem* int_pem_alloc(void);
-static ssize_t int_pem_read(krypt_instream *in, uint8_t *buf, size_t len);
-static int int_pem_seek(krypt_instream *in, off_t offset, int whence);
-static void int_pem_mark(krypt_instream *in);
-static void int_pem_free(krypt_instream *in);
+static ssize_t int_pem_read(binyo_instream *in, uint8_t *buf, size_t len);
+static int int_pem_seek(binyo_instream *in, off_t offset, int whence);
+static void int_pem_mark(binyo_instream *in);
+static void int_pem_free(binyo_instream *in);
 
-static krypt_instream_interface interface_pem = {
+static binyo_instream_interface interface_pem = {
     KRYPT_INSTREAM_TYPE_PEM,
     int_pem_read,
     NULL,
@@ -62,7 +62,7 @@ static krypt_instream_interface interface_pem = {
 };
 
 static krypt_b64_buffer*
-int_krypt_b64_buffer_new(krypt_instream *original)
+int_krypt_b64_buffer_new(binyo_instream *original)
 {
     krypt_b64_buffer *ret;
     ret = ALLOC(krypt_b64_buffer);
@@ -72,14 +72,14 @@ int_krypt_b64_buffer_new(krypt_instream *original)
     return ret;
 }
 
-krypt_instream *
-krypt_instream_new_pem(krypt_instream *original)
+binyo_instream *
+krypt_instream_new_pem(binyo_instream *original)
 {
     krypt_instream_pem *in;
 
     in = int_pem_alloc();
     in->buffer = int_krypt_b64_buffer_new(original);
-    return (krypt_instream *) in;
+    return (binyo_instream *) in;
 }
 
 static krypt_instream_pem*
@@ -93,20 +93,20 @@ int_pem_alloc(void)
 }
 
 static int
-int_pem_seek(krypt_instream *instream, off_t offset, int whence)
+int_pem_seek(binyo_instream *instream, off_t offset, int whence)
 {
     /* TODO */
     return 0;
 }
 
 static void
-int_pem_mark(krypt_instream *instream)
+int_pem_mark(binyo_instream *instream)
 {
     krypt_instream_pem *in;
 
     if (!instream) return;
     int_safe_cast(in, instream);
-    krypt_instream_mark(in->buffer->inner);
+    binyo_instream_mark(in->buffer->inner);
 }
 
 static void
@@ -123,7 +123,7 @@ int_pem_free_inner(krypt_instream_pem *in)
 }
 
 static void
-int_pem_free(krypt_instream *instream)
+int_pem_free(binyo_instream *instream)
 {
     krypt_instream_pem *in;
     krypt_b64_buffer *b64;
@@ -132,12 +132,12 @@ int_pem_free(krypt_instream *instream)
     int_safe_cast(in, instream);
     b64 = in->buffer;
 
-    krypt_instream_free(b64->inner);
+    binyo_instream_free(b64->inner);
     int_pem_free_inner(in);
 }
 
 void
-krypt_instream_pem_free_wrapper(krypt_instream *instream)
+krypt_instream_pem_free_wrapper(binyo_instream *instream)
 {
     krypt_instream_pem *in;
 
@@ -149,7 +149,7 @@ krypt_instream_pem_free_wrapper(krypt_instream *instream)
 }
 
 size_t
-krypt_pem_get_last_name(krypt_instream *instream, uint8_t **out)
+krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out)
 {
     krypt_instream_pem *in;
     krypt_b64_buffer *b64;
@@ -176,7 +176,7 @@ krypt_pem_get_last_name(krypt_instream *instream, uint8_t **out)
 
 
 void
-krypt_pem_continue_stream(krypt_instream *instream)
+krypt_pem_continue_stream(binyo_instream *instream)
 {
     krypt_instream_pem *in;
     krypt_b64_buffer *b64;
@@ -236,7 +236,7 @@ int_match_footer(krypt_pem_parse_ctx *ctx)
 static int
 int_b64_fill(krypt_b64_buffer *in)
 {
-    krypt_outstream *out;
+    binyo_outstream *out;
     size_t total = 0;
     ssize_t linelen;
     char linebuf[KRYPT_LINE_BUF_SIZE]; 
@@ -246,13 +246,13 @@ int_b64_fill(krypt_b64_buffer *in)
         in->buffer = NULL;
     }
 
-    out = krypt_outstream_new_bytes_size(KRYPT_IO_BUF_SIZE + KRYPT_LINE_BUF_SIZE);
-    linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+    out = binyo_outstream_new_bytes_size(BINYO_IO_BUF_SIZE + KRYPT_LINE_BUF_SIZE);
+    linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
     if (linelen < -1) return 0;
 
-    while (in->state != DONE && total < KRYPT_IO_BUF_SIZE && linelen != -1) {
+    while (in->state != DONE && total < BINYO_IO_BUF_SIZE && linelen != -1) {
 	if (linelen == 0) {
-	    linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+	    linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 	    continue;
 	}
 	switch (in->state) {
@@ -267,7 +267,7 @@ int_b64_fill(krypt_b64_buffer *in)
 			in->state = CONTENT;
 		    }
 		}
-		linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+		linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 		break;
 	    case CONTENT:
 		if (linebuf[0] == '-') {
@@ -279,8 +279,8 @@ int_b64_fill(krypt_b64_buffer *in)
 			return 0;
 		    }
 		    total += linelen;
-		    if (total < KRYPT_IO_BUF_SIZE)
-			linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+		    if (total < BINYO_IO_BUF_SIZE)
+			linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 		}
 		break;
 	    case FOOTER:
@@ -293,10 +293,10 @@ int_b64_fill(krypt_b64_buffer *in)
 		    if (int_match_footer(&linectx))
 			in->state = DONE;
 		    else
-			linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+			linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 		}
 		else {
-		    linelen = krypt_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
+		    linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 		}
 		break;
 	    default:
@@ -308,7 +308,7 @@ int_b64_fill(krypt_b64_buffer *in)
 	in->eof = 1;
 
     if (linelen == -1 && in->state != DONE) {
-	krypt_outstream_free(out);
+	binyo_outstream_free(out);
 	switch (in->state) {
 	    case HEADER:
 		in->len = in->off = 0;
@@ -324,7 +324,7 @@ int_b64_fill(krypt_b64_buffer *in)
     }
 
     in->off = 0;
-    in->len = krypt_outstream_bytes_get_bytes_free(out, &in->buffer);
+    in->len = binyo_outstream_bytes_get_bytes_free(out, &in->buffer);
     return 1;
 }
 
@@ -367,7 +367,7 @@ int_b64_read(krypt_b64_buffer *in, uint8_t *buf, size_t len)
 }
 
 static ssize_t
-int_pem_read(krypt_instream *instream, uint8_t *buf, size_t len)
+int_pem_read(binyo_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_pem *in;
     if (!buf) return -2;

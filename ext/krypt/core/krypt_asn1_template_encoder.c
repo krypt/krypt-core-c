@@ -23,20 +23,20 @@ int_template_encode_non_cached(VALUE self, krypt_asn1_template *template, VALUE 
 int
 int_template_encode_cached(krypt_asn1_object *object, VALUE *value)
 {
-    krypt_outstream *out;
+    binyo_outstream *out;
     uint8_t *bytes;
     size_t len;
     int ret;
 
     len = object->header->tag_len + object->header->length_len + object->bytes_len;
     bytes = ALLOCA_N(uint8_t, len);
-    out = krypt_outstream_new_bytes_prealloc(bytes, len);
+    out = binyo_outstream_new_bytes_prealloc(bytes, len);
 
     if ((ret = krypt_asn1_object_encode(out, object))) {
 	*value = rb_str_new((const char *) bytes, len);
     }
 
-    krypt_outstream_free(out);
+    binyo_outstream_free(out);
     return ret;
 }
 

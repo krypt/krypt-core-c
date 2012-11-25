@@ -22,24 +22,24 @@ enum krypt_chunked_state {
 };
 
 typedef struct krypt_instream_chunked {
-    krypt_instream_interface *methods;
-    krypt_instream *inner;
+    binyo_instream_interface *methods;
+    binyo_instream *inner;
     int values_only;
     enum krypt_chunked_state state;
     krypt_asn1_header *cur_header;
-    krypt_instream *cur_value_stream;
+    binyo_instream *cur_value_stream;
     size_t header_offset;
 } krypt_instream_chunked;
 
-#define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_CHUNKED, krypt_instream_chunked)
+#define int_safe_cast(out, in)		binyo_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_CHUNKED, krypt_instream_chunked)
 
 static krypt_instream_chunked* int_chunked_alloc(void);
-static ssize_t int_chunked_read(krypt_instream *in, uint8_t *buf, size_t len);
-static int int_chunked_seek(krypt_instream *in, off_t offset, int whence);
-static void int_chunked_mark(krypt_instream *in);
-static void int_chunked_free(krypt_instream *in);
+static ssize_t int_chunked_read(binyo_instream *in, uint8_t *buf, size_t len);
+static int int_chunked_seek(binyo_instream *in, off_t offset, int whence);
+static void int_chunked_mark(binyo_instream *in);
+static void int_chunked_free(binyo_instream *in);
 
-static krypt_instream_interface krypt_interface_chunked = {
+static binyo_instream_interface krypt_interface_chunked = {
     KRYPT_INSTREAM_TYPE_CHUNKED,
     int_chunked_read,
     NULL,
@@ -49,8 +49,8 @@ static krypt_instream_interface krypt_interface_chunked = {
     int_chunked_free
 };
 
-krypt_instream *
-krypt_instream_new_chunked(krypt_instream *original, int values_only)
+binyo_instream *
+krypt_instream_new_chunked(binyo_instream *original, int values_only)
 {
     krypt_instream_chunked *in;
 
@@ -58,7 +58,7 @@ krypt_instream_new_chunked(krypt_instream *original, int values_only)
     in->inner = original;
     in->values_only = values_only;
     in->state = NEW_HEADER;
-    return (krypt_instream *) in;
+    return (binyo_instream *) in;
 }
 
 static krypt_instream_chunked*
@@ -124,14 +124,14 @@ int_read_value(krypt_instream_chunked *in, uint8_t *buf, size_t len)
     if (!in->cur_value_stream)
 	in->cur_value_stream = krypt_asn1_get_value_stream(in->inner, in->cur_header, in->values_only);
 
-    read = krypt_instream_read(in->cur_value_stream, buf, len);
+    read = binyo_instream_read(in->cur_value_stream, buf, len);
     if (read < -1)
 	return read;
 
     if (read == -1) {
 	if (in->state != DONE)
 	    in->state = NEW_HEADER;
-	krypt_instream_free(in->cur_value_stream);
+	binyo_instream_free(in->cur_value_stream);
 	in->cur_value_stream = NULL;
 	read = 0;
     }
@@ -226,7 +226,7 @@ int_read(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 }
 
 static ssize_t
-int_chunked_read(krypt_instream *instream, uint8_t *buf, size_t len)
+int_chunked_read(binyo_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_chunked *in;
     
@@ -240,7 +240,7 @@ int_chunked_read(krypt_instream *instream, uint8_t *buf, size_t len)
 }
 
 static int
-int_chunked_seek(krypt_instream *instream, off_t offset, int whence)
+int_chunked_seek(binyo_instream *instream, off_t offset, int whence)
 {
     /* int_instream_chunked *in;
 
@@ -251,17 +251,17 @@ int_chunked_seek(krypt_instream *instream, off_t offset, int whence)
 }
 
 static void
-int_chunked_mark(krypt_instream *instream)
+int_chunked_mark(binyo_instream *instream)
 {
     krypt_instream_chunked *in;
 
     if (!instream) return;
     int_safe_cast(in, instream);
-    krypt_instream_mark(in->inner);
+    binyo_instream_mark(in->inner);
 }
 
 static void
-int_chunked_free(krypt_instream *instream)
+int_chunked_free(binyo_instream *instream)
 {
     krypt_instream_chunked *in;
 

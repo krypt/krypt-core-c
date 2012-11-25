@@ -13,21 +13,21 @@
 #include "krypt-core.h"
 
 typedef struct krypt_instream_definite_st {
-    krypt_instream_interface *methods;
-    krypt_instream *inner;
+    binyo_instream_interface *methods;
+    binyo_instream *inner;
     size_t max_read;
     size_t num_read;
 } krypt_instream_definite;
 
-#define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_DEFINITE, krypt_instream_definite)
+#define int_safe_cast(out, in)		binyo_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_DEFINITE, krypt_instream_definite)
 
 static krypt_instream_definite* int_definite_alloc(void);
-static ssize_t int_definite_read(krypt_instream *in, uint8_t *buf, size_t len);
-static int int_definite_seek(krypt_instream *in, off_t offset, int whence);
-static void int_definite_mark(krypt_instream *in);
-static void int_definite_free(krypt_instream *in);
+static ssize_t int_definite_read(binyo_instream *in, uint8_t *buf, size_t len);
+static int int_definite_seek(binyo_instream *in, off_t offset, int whence);
+static void int_definite_mark(binyo_instream *in);
+static void int_definite_free(binyo_instream *in);
 
-static krypt_instream_interface krypt_interface_definite = {
+static binyo_instream_interface krypt_interface_definite = {
     KRYPT_INSTREAM_TYPE_DEFINITE,
     int_definite_read,
     NULL,
@@ -37,15 +37,15 @@ static krypt_instream_interface krypt_interface_definite = {
     int_definite_free
 };
 
-krypt_instream *
-krypt_instream_new_definite(krypt_instream *original, size_t len)
+binyo_instream *
+krypt_instream_new_definite(binyo_instream *original, size_t len)
 {
     krypt_instream_definite *in;
 
     in = int_definite_alloc();
     in->inner = original;
     in->max_read = len;
-    return (krypt_instream *) in;
+    return (binyo_instream *) in;
 }
 
 static krypt_instream_definite*
@@ -59,7 +59,7 @@ int_definite_alloc(void)
 }
 
 static ssize_t
-int_definite_read(krypt_instream *instream, uint8_t *buf, size_t len)
+int_definite_read(binyo_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_definite *in;
     size_t to_read;
@@ -77,7 +77,7 @@ int_definite_read(krypt_instream *instream, uint8_t *buf, size_t len)
     else
 	to_read = len;
 
-    r = krypt_instream_read(in->inner, buf, to_read);
+    r = binyo_instream_read(in->inner, buf, to_read);
     if (r <= -1) return -2;
     if (in->num_read >= SIZE_MAX - r) {
 	krypt_error_add("Stream too large");
@@ -89,7 +89,7 @@ int_definite_read(krypt_instream *instream, uint8_t *buf, size_t len)
 }
 
 static int
-int_definite_seek(krypt_instream *instream, off_t offset, int whence)
+int_definite_seek(binyo_instream *instream, off_t offset, int whence)
 {
     off_t real_off;
     long numread;
@@ -118,22 +118,22 @@ int_definite_seek(krypt_instream *instream, off_t offset, int whence)
 	return 0;
     }
 
-    return krypt_instream_seek(in->inner, offset, whence);
+    return binyo_instream_seek(in->inner, offset, whence);
 }
 
 static void
-int_definite_mark(krypt_instream *instream)
+int_definite_mark(binyo_instream *instream)
 {
     krypt_instream_definite *in;
 
     if (!instream) return;
     int_safe_cast(in, instream);
-    krypt_instream_mark(in->inner);
+    binyo_instream_mark(in->inner);
 }
 
 
 static void
-int_definite_free(krypt_instream *instream)
+int_definite_free(binyo_instream *instream)
 {
     /* do not free the inner stream */
 }

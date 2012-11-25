@@ -16,25 +16,25 @@ VALUE mKryptPEM;
 VALUE eKryptPEMError;
 
 static int
-int_consume_stream(krypt_instream *in, VALUE *vout)
+int_consume_stream(binyo_instream *in, VALUE *vout)
 {
-    krypt_outstream *out;
+    binyo_outstream *out;
     size_t len;
     uint8_t *str;
-    uint8_t buf[KRYPT_IO_BUF_SIZE];
+    uint8_t buf[BINYO_IO_BUF_SIZE];
     ssize_t read;
     
-    out = krypt_outstream_new_bytes_size(KRYPT_IO_BUF_SIZE);
+    out = binyo_outstream_new_bytes_size(BINYO_IO_BUF_SIZE);
 
-    while ((read = krypt_instream_read(in, buf, KRYPT_IO_BUF_SIZE)) >= 0) {
-	krypt_outstream_write(out, buf, read);
+    while ((read = binyo_instream_read(in, buf, BINYO_IO_BUF_SIZE)) >= 0) {
+	binyo_outstream_write(out, buf, read);
     }
     if (read < -1) {
-	krypt_outstream_free(out);
+	binyo_outstream_free(out);
 	return 0;
     }
 
-    len = krypt_outstream_bytes_get_bytes_free(out, &str);
+    len = binyo_outstream_bytes_get_bytes_free(out, &str);
     if (len == 0) {
 	*vout = Qnil;
     } else {
@@ -86,7 +86,7 @@ krypt_pem_decode(VALUE self, VALUE pem)
     VALUE ary, der;
     size_t i = 0;
     int result;
-    krypt_instream *in = krypt_instream_new_pem(krypt_instream_new_value_pem(pem));
+    binyo_instream *in = krypt_instream_new_pem(krypt_instream_new_value_pem(pem));
     
     ary = rb_ary_new();
 
@@ -108,11 +108,11 @@ krypt_pem_decode(VALUE self, VALUE pem)
     }
     if (!result) goto error;
 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     return ary;
 
 error:
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     krypt_error_raise(eKryptPEMError, "Error while decoding PEM data");
     return Qnil;
 }

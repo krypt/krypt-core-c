@@ -196,9 +196,9 @@ static int int_asn1_data_value_decode(VALUE self, krypt_asn1_data *data, VALUE *
 static int int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out);
 static int int_asn1_prim_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out);
 
-static int int_asn1_data_encode_to(VALUE self, krypt_outstream *out, VALUE value, krypt_asn1_data *data);
-static int int_asn1_cons_encode_to(VALUE self, krypt_outstream *out, VALUE value, krypt_asn1_data *data);
-static int int_asn1_prim_encode_to(VALUE self, krypt_outstream *out, VALUE value, krypt_asn1_data *data);
+static int int_asn1_data_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn1_data *data);
+static int int_asn1_cons_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn1_data *data);
+static int int_asn1_prim_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn1_data *data);
 
 static void
 int_handle_class_specifics(VALUE self, krypt_asn1_header *header)
@@ -240,7 +240,7 @@ int_determine_class_and_default_tag(krypt_asn1_data *data)
 
 /* This initializer is used with freshly parsed values */
 static VALUE
-krypt_asn1_data_new(krypt_instream *in, krypt_asn1_header *header)
+krypt_asn1_data_new(binyo_instream *in, krypt_asn1_header *header)
 {
     VALUE obj;
     VALUE klass;
@@ -866,7 +866,7 @@ krypt_asn1_data_set_value(VALUE self, VALUE value)
 }
 
 static int 
-int_asn1_data_encode_to(VALUE self, krypt_outstream *out, VALUE value, krypt_asn1_data *data)
+int_asn1_data_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn1_data *data)
 {
     int ret;
 
@@ -916,7 +916,7 @@ int_asn1_make_explicit(VALUE value, int default_tag, VALUE *out)
 }
 
 static int
-int_asn1_encode_to(krypt_outstream *out, krypt_asn1_data *data, VALUE self)
+int_asn1_encode_to(binyo_outstream *out, krypt_asn1_data *data, VALUE self)
 {
     krypt_asn1_object *object = data->object;
 
@@ -951,15 +951,15 @@ int_asn1_encode_to(krypt_outstream *out, krypt_asn1_data *data, VALUE self)
 static VALUE
 krypt_asn1_data_encode_to(VALUE self, VALUE io)
 {
-    krypt_outstream *out;
+    binyo_outstream *out;
     krypt_asn1_data *data;
     int result;
 
     int_asn1_data_get(self, data);
 
-    out = krypt_outstream_new_value(io);
+    out = binyo_outstream_new_value(io);
     result = int_asn1_encode_to(out, data, self);
-    krypt_outstream_free(out);
+    binyo_outstream_free(out);
     if (!result)
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     return self;
@@ -968,22 +968,22 @@ krypt_asn1_data_encode_to(VALUE self, VALUE io)
 static VALUE
 int_asn1_data_to_der_cached(krypt_asn1_object *object)
 {
-    krypt_outstream *out;
+    binyo_outstream *out;
     VALUE ret;
     uint8_t *bytes;
     size_t len;
 
     len = object->header->tag_len + object->header->length_len + object->bytes_len;
     bytes = ALLOCA_N(uint8_t, len);
-    out = krypt_outstream_new_bytes_prealloc(bytes, len);
+    out = binyo_outstream_new_bytes_prealloc(bytes, len);
 
     if (!krypt_asn1_object_encode(out, object)) {
-	krypt_outstream_free(out);
+	binyo_outstream_free(out);
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     }
 
     ret = rb_str_new((const char *) bytes, len);
-    krypt_outstream_free(out);
+    binyo_outstream_free(out);
     return ret;
 }
 
@@ -991,18 +991,18 @@ static VALUE
 int_asn1_data_to_der_non_cached(krypt_asn1_data *data, VALUE self)
 {
     VALUE string;
-    krypt_outstream *out;
+    binyo_outstream *out;
     uint8_t *bytes;
     size_t len;
 
-    out = krypt_outstream_new_bytes_size(2048);
+    out = binyo_outstream_new_bytes_size(2048);
 
     if (!int_asn1_encode_to(out, data, self)) {
-	krypt_outstream_free(out);
+	binyo_outstream_free(out);
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     }
 
-    len = krypt_outstream_bytes_get_bytes_free(out, &bytes);
+    len = binyo_outstream_bytes_get_bytes_free(out, &bytes);
     if (len > LONG_MAX)
 	rb_raise(eKryptASN1Error, "Size of string too large: %ld", len);
     string = rb_str_new((const char *) bytes, (long) len);
@@ -1134,7 +1134,7 @@ static int
 int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
 {
     VALUE cur;
-    krypt_instream *in;
+    binyo_instream *in;
     krypt_asn1_object *object;
     krypt_asn1_header *header;
     int ret;
@@ -1144,7 +1144,7 @@ int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
     if (!object->bytes)
 	return 1;
 
-    in = krypt_instream_new_bytes(object->bytes, object->bytes_len);
+    in = binyo_instream_new_bytes(object->bytes, object->bytes_len);
     
     while ((ret = krypt_asn1_next_header(in, &header)) == 1) {
 	if (!(cur = krypt_asn1_data_new(in, header))) {
@@ -1161,23 +1161,23 @@ int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
 	(void) rb_ary_pop(*out);
     }
 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     return 1;
 
 error: 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     return 0;
 }
 
 static VALUE
 int_cons_encode_sub_elems_i(VALUE cur, VALUE args)
 {
-    krypt_outstream *out = NULL;
+    binyo_outstream *out = NULL;
     int *eoc_p;
     krypt_asn1_data *data;
     krypt_asn1_header *header;
     
-    Data_Get_Struct(rb_ary_entry(args, 0), krypt_outstream, out);
+    Data_Get_Struct(rb_ary_entry(args, 0), binyo_outstream, out);
     Data_Get_Struct(rb_ary_entry(args, 1), int, eoc_p);
     int_asn1_data_get(cur, data);
 
@@ -1201,7 +1201,7 @@ int_cons_encode_sub_elems_wrapped(VALUE args)
 }
 
 static int
-int_cons_add_eoc(krypt_outstream *out)
+int_cons_add_eoc(binyo_outstream *out)
 {
     krypt_asn1_data *data;
     VALUE eoc = int_asn1_end_of_contents_new_instance();
@@ -1215,7 +1215,7 @@ int_cons_add_eoc(krypt_outstream *out)
 }
 
 static int
-int_cons_encode_sub_elems_enum(krypt_outstream *out, VALUE enumerable, int infinite)
+int_cons_encode_sub_elems_enum(binyo_outstream *out, VALUE enumerable, int infinite)
 {
     VALUE args, wrapped_out, wrapped_eoc_p;
     int state = 0;
@@ -1236,7 +1236,7 @@ int_cons_encode_sub_elems_enum(krypt_outstream *out, VALUE enumerable, int infin
 }
 
 static int
-int_cons_add_eoc_ary(krypt_outstream *out, VALUE ary, long i)
+int_cons_add_eoc_ary(binyo_outstream *out, VALUE ary, long i)
 {
     krypt_asn1_data *data;
     krypt_asn1_header *header;
@@ -1251,7 +1251,7 @@ int_cons_add_eoc_ary(krypt_outstream *out, VALUE ary, long i)
 }
 
 static int
-int_cons_encode_sub_elems_ary(krypt_outstream *out, VALUE ary, int infinite)
+int_cons_encode_sub_elems_ary(binyo_outstream *out, VALUE ary, int infinite)
 {
     long size, i;
     VALUE cur;
@@ -1300,7 +1300,7 @@ int_cons_sort_set(VALUE enumerable)
 }
 
 static int
-int_cons_encode_sub_elems(krypt_outstream *out, VALUE enumerable, krypt_asn1_data *data) 
+int_cons_encode_sub_elems(binyo_outstream *out, VALUE enumerable, krypt_asn1_data *data) 
 {
     krypt_asn1_header *header;
 
@@ -1325,18 +1325,18 @@ int_cons_encode_sub_elems(krypt_outstream *out, VALUE enumerable, krypt_asn1_dat
 static int
 int_asn1_cons_update_length(VALUE ary, krypt_asn1_data *data, uint8_t **out, size_t *outlen)
 {
-    krypt_outstream *bos = krypt_outstream_new_bytes_size(1024);
+    binyo_outstream *bos = binyo_outstream_new_bytes_size(1024);
 
     if (!int_cons_encode_sub_elems(bos, ary, data)) {
-	krypt_outstream_free(bos);
+	binyo_outstream_free(bos);
 	return 0;
     }
-    *outlen = krypt_outstream_bytes_get_bytes_free(bos, out);
+    *outlen = binyo_outstream_bytes_get_bytes_free(bos, out);
     return 1;
 }
 
 static int
-int_asn1_cons_encode_update(krypt_outstream *out, VALUE ary, krypt_asn1_data *data)
+int_asn1_cons_encode_update(binyo_outstream *out, VALUE ary, krypt_asn1_data *data)
 {
     size_t len;
     uint8_t *bytes = NULL;
@@ -1346,7 +1346,7 @@ int_asn1_cons_encode_update(krypt_outstream *out, VALUE ary, krypt_asn1_data *da
     header->length = len;
     if (!krypt_asn1_header_encode(out, header)) goto error;
     if (header->length > 0) {
-	if (krypt_outstream_write(out, bytes, len) < 0) goto error;
+	if (binyo_outstream_write(out, bytes, len) < 0) goto error;
     }
 
     xfree(bytes);
@@ -1358,7 +1358,7 @@ error:
 
 
 static int
-int_asn1_cons_encode_to(VALUE self, krypt_outstream *out, VALUE ary, krypt_asn1_data *data)
+int_asn1_cons_encode_to(VALUE self, binyo_outstream *out, VALUE ary, krypt_asn1_data *data)
 {
     krypt_asn1_header *header;
 
@@ -1398,7 +1398,7 @@ int_asn1_prim_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
 }
 
 static int
-int_asn1_prim_encode_to(VALUE self, krypt_outstream *out, VALUE value, krypt_asn1_data *data)
+int_asn1_prim_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn1_data *data)
 {
     krypt_asn1_object *object;
 
@@ -1441,7 +1441,7 @@ krypt_asn1_bit_string_get_unused_bits(VALUE self)
 /* End ASN1Primitive methods */
 
 int 
-krypt_asn1_decode_stream(krypt_instream *in, VALUE *out)
+krypt_asn1_decode_stream(binyo_instream *in, VALUE *out)
 {
     krypt_asn1_header *header;
     VALUE ret;
@@ -1460,23 +1460,23 @@ krypt_asn1_decode_stream(krypt_instream *in, VALUE *out)
 }
 
 static VALUE
-int_asn1_fallback_decode(krypt_instream *in, krypt_instream *cache)
+int_asn1_fallback_decode(binyo_instream *in, binyo_instream *cache)
 {
     VALUE ret;
     uint8_t *lookahead = NULL;
     size_t la_size;
-    krypt_instream *bytes;
-    krypt_instream *retry;
+    binyo_instream *bytes;
+    binyo_instream *retry;
     int result;
 
-    la_size = krypt_instream_cache_get_bytes(cache, &lookahead);
-    krypt_instream_cache_free_wrapper(cache); /* do not use krypt_instream_free, would free in too */
-    bytes = krypt_instream_new_bytes(lookahead, la_size);
-    retry = krypt_instream_new_seq(bytes, in); /*chain cached bytes and original stream */
+    la_size = binyo_instream_cache_get_bytes(cache, &lookahead);
+    binyo_instream_cache_free_wrapper(cache); /* do not use krypt_instream_free, would free in too */
+    bytes = binyo_instream_new_bytes(lookahead, la_size);
+    retry = binyo_instream_new_seq(bytes, in); /*chain cached bytes and original stream */
     result = krypt_asn1_decode_stream(retry, &ret);
     if (lookahead)
 	xfree(lookahead);
-    krypt_instream_free(retry);
+    binyo_instream_free(retry);
     if (result != 1) 
 	krypt_error_raise(eKryptASN1Error, "Error while DER-decoding value");
     return ret;
@@ -1513,22 +1513,22 @@ int_asn1_fallback_decode(krypt_instream *in, krypt_instream *cache)
 static VALUE
 krypt_asn1_decode(VALUE self, VALUE obj)
 {
-    krypt_instream *in;
-    krypt_instream *cache;
-    krypt_instream *pem;
+    binyo_instream *in;
+    binyo_instream *cache;
+    binyo_instream *pem;
     VALUE ret;
     int result;
 
     /* Try PEM first, if it fails, try as DER */
     in = krypt_instream_new_value_der(obj);
-    cache = krypt_instream_new_cache(in);
+    cache = binyo_instream_new_cache(in);
     pem = krypt_instream_new_pem(cache);
     result = krypt_asn1_decode_stream(pem, &ret);
     if (result != 1) {
 	krypt_instream_pem_free_wrapper(pem);
 	return int_asn1_fallback_decode(in, cache);
     }
-    krypt_instream_free(pem); /* also frees in */
+    binyo_instream_free(pem); /* also frees in */
     return ret;
 }
 
@@ -1551,9 +1551,9 @@ krypt_asn1_decode_der(VALUE self, VALUE obj)
     VALUE ret;
     int result;
 
-    krypt_instream *in = krypt_instream_new_value_der(obj);
+    binyo_instream *in = krypt_instream_new_value_der(obj);
     result = krypt_asn1_decode_stream(in, &ret);
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (result != 1)
 	krypt_error_raise(eKryptASN1Error, "Error while DER-decoding value");
     return ret;
@@ -1578,10 +1578,10 @@ krypt_asn1_decode_pem(VALUE self, VALUE obj)
     VALUE ret;
     int result;
     
-    krypt_instream *pem;
+    binyo_instream *pem;
     pem = krypt_instream_new_pem(krypt_instream_new_value_pem(obj));
     result = krypt_asn1_decode_stream(pem, &ret);
-    krypt_instream_free(pem);
+    binyo_instream_free(pem);
     if (result != 1)
 	krypt_error_raise(eKryptASN1Error, "Error while PEM-decoding value");
     return ret;

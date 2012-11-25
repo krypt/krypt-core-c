@@ -23,7 +23,6 @@ extern "C" {
 #define RUBY_READONLY_STRING 1
 
 #include <ruby.h>
-#include "krypt-os.h"
 
 #if defined(HAVE_RUBY_IO_H)
 #include <ruby/io.h>
@@ -72,8 +71,6 @@ VALUE krypt_to_pem(VALUE obj);
 void krypt_compute_twos_complement(uint8_t *dest, uint8_t *src, size_t len);
 
 void Init_kryptcore(void);
-void Init_krypt_io(void);
-void InitVM_krypt_io(void);
 
 #if defined(__cplusplus)
 }

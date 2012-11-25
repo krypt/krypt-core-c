@@ -63,9 +63,9 @@ void Init_krypt_instream_adapter(void);
 void Init_krypt_pem(void);
 
 size_t krypt_asn1_encode_integer(long num, uint8_t **out);
-int krypt_asn1_decode_stream(krypt_instream *in, VALUE *out);
+int krypt_asn1_decode_stream(binyo_instream *in, VALUE *out);
 
-VALUE krypt_instream_adapter_new(krypt_instream *in);
+VALUE krypt_instream_adapter_new(binyo_instream *in);
 
 #endif /* _KRYPT_ASN1_H_ */
 

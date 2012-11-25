@@ -15,10 +15,6 @@
 
 #include RUBY_EXTCONF_H
 
-#ifndef HAVE_RB_IO_CHECK_BYTE_READABLE 
-#define rb_io_check_byte_readable(fptr)		rb_io_check_readable(fptr)
-#endif
-
 #ifndef HAVE_RB_ENUMERATORIZE
 #define KRYPT_RETURN_ENUMERATOR(enumerable, id)						\
 do {											\
