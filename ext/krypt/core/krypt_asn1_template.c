@@ -11,7 +11,6 @@
 */
 
 #include "krypt-core.h"
-#include "krypt_asn1-shared.h"
 #include "krypt_asn1-internal.h"
 #include "krypt_asn1_template-internal.h"
 
@@ -107,7 +106,7 @@ krypt_asn1_template *
 krypt_asn1_template_new_from_stream(krypt_instream *in, krypt_asn1_header *header, VALUE definition, VALUE options)
 {
     krypt_asn1_object *encoding;
-    unsigned char *value = NULL;
+    uint8_t *value = NULL;
     ssize_t value_len;
 
     if ((value_len = krypt_asn1_get_value(in, header, &value)) == -1)
@@ -306,8 +305,8 @@ krypt_asn1_template_cmp(VALUE self, VALUE other)
     if (!rb_respond_to(other, sKrypt_ID_TO_DER)) return Qnil;
     vs2 = krypt_to_der(other);
 
-    if (!krypt_asn1_cmp_set_of((unsigned char *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
-		                         (unsigned char *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
+    if (!krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
+		                         (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
 	krypt_error_raise(eKryptASN1Error, "Error while comparing values");
     }
     return INT2NUM(result);

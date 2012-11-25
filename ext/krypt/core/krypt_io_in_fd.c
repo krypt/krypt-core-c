@@ -22,7 +22,7 @@ typedef struct krypt_instream_fd_st {
 #define int_safe_cast(out, in)	krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_FD, krypt_instream_fd)
     
 static krypt_instream_fd *int_fd_alloc(void);
-static ssize_t int_fd_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_fd_read(krypt_instream *in, uint8_t *buf, size_t len);
 static ssize_t int_fd_gets(krypt_instream *in, char *line, size_t len);
 static int int_fd_seek(krypt_instream *in, off_t offset, int whence);
 static void int_fd_free(krypt_instream *in);
@@ -67,7 +67,7 @@ int_fd_alloc(void)
 }
 
 static ssize_t
-int_fd_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_fd_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     int fd;
     ssize_t r;

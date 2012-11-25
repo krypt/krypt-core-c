@@ -52,7 +52,7 @@ typedef struct krypt_out_stream_st {
 struct krypt_instream_interface_st {
     int type;
 
-    ssize_t (*read)(krypt_instream*, unsigned char*, size_t);
+    ssize_t (*read)(krypt_instream*, uint8_t*, size_t);
     int (*rb_read)(krypt_instream*, VALUE, VALUE, VALUE*);
     ssize_t (*gets)(krypt_instream*, char *, size_t);
     int (*seek)(krypt_instream*, off_t, int); 
@@ -63,7 +63,7 @@ struct krypt_instream_interface_st {
 struct krypt_outstream_interface_st {
     int type;
 
-    ssize_t (*write)(krypt_outstream*, unsigned char *buf, size_t);
+    ssize_t (*write)(krypt_outstream*, uint8_t *buf, size_t);
     int (*rb_write)(krypt_outstream*, VALUE, VALUE*);
     void (*mark)(krypt_outstream*);
     void (*free)(krypt_outstream*);
@@ -88,7 +88,7 @@ struct krypt_outstream_interface_st {
 typedef struct krypt_io_adapter_st {
     krypt_instream *in;
     krypt_outstream *out;
-    unsigned char *buf;
+    uint8_t *buf;
     size_t offset;
 } krypt_io_adapter;
 
@@ -118,7 +118,7 @@ VALUE krypt_io_adapter_new_outstream_with_buffer(krypt_outstream *out, size_t bu
 void krypt_add_io_error(void);
 void krypt_instream_rb_size_buffer(VALUE *str, size_t len);
 
-ssize_t krypt_instream_read(krypt_instream *in, unsigned char *buf, size_t len);
+ssize_t krypt_instream_read(krypt_instream *in, uint8_t *buf, size_t len);
 int krypt_instream_rb_read(krypt_instream *in, VALUE vlen, VALUE vbuf, VALUE *out);
 ssize_t krypt_instream_gets(krypt_instream *in, char *line, size_t len);
 int krypt_instream_seek(krypt_instream *in, off_t offset, int whence);
@@ -128,7 +128,7 @@ void krypt_instream_free(krypt_instream *in);
 
 krypt_instream *krypt_instream_new_fd(int fd);
 krypt_instream *krypt_instream_new_fd_io(VALUE io);
-krypt_instream *krypt_instream_new_bytes(unsigned char *bytes, size_t len);
+krypt_instream *krypt_instream_new_bytes(uint8_t *bytes, size_t len);
 krypt_instream *krypt_instream_new_io_generic(VALUE io);
 krypt_instream *krypt_instream_new_value(VALUE value);
 krypt_instream *krypt_instream_new_value_der(VALUE value);
@@ -142,23 +142,23 @@ void krypt_instream_cache_free_wrapper(krypt_instream *instream);
 krypt_instream *krypt_instream_new_pem(krypt_instream *original);
 void krypt_instream_pem_free_wrapper(krypt_instream *instream);
 
-size_t krypt_instream_cache_get_bytes(krypt_instream *in, unsigned char **out);
-size_t krypt_pem_get_last_name(krypt_instream *instream, unsigned char **out);
+size_t krypt_instream_cache_get_bytes(krypt_instream *in, uint8_t **out);
+size_t krypt_pem_get_last_name(krypt_instream *instream, uint8_t **out);
 void krypt_pem_continue_stream(krypt_instream *instream);
 
-ssize_t krypt_outstream_write(krypt_outstream *out, unsigned char *buf, size_t len);
+ssize_t krypt_outstream_write(krypt_outstream *out, uint8_t *buf, size_t len);
 int krypt_outstream_rb_write(krypt_outstream *out, VALUE vbuf, VALUE *ret);
 void krypt_outstream_mark(krypt_outstream *in);
 void krypt_outstream_free(krypt_outstream *out);
 
-size_t krypt_outstream_bytes_get_bytes_free(krypt_outstream *outstream, unsigned char **bytes);
+size_t krypt_outstream_bytes_get_bytes_free(krypt_outstream *outstream, uint8_t **bytes);
 VALUE krypt_outstream_string_build(krypt_outstream *outstream);
 
 krypt_outstream *krypt_outstream_new_fd(int fd);
 krypt_outstream *krypt_outstream_new_fd_io(VALUE io);
 krypt_outstream *krypt_outstream_new_bytes(void);
 krypt_outstream *krypt_outstream_new_bytes_size(size_t size);
-krypt_outstream *krypt_outstream_new_bytes_prealloc(unsigned char *b, size_t len);
+krypt_outstream *krypt_outstream_new_bytes_prealloc(uint8_t *b, size_t len);
 krypt_outstream *krypt_outstream_new_io_generic(VALUE io);
 krypt_outstream *krypt_outstream_new_value(VALUE value);
 krypt_outstream *krypt_outstream_new_string(void);

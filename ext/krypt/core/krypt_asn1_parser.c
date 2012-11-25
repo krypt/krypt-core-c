@@ -229,7 +229,7 @@ static VALUE
 krypt_asn1_header_bytes(VALUE self)
 {
     krypt_asn1_parsed_header *header;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t size;
     krypt_outstream *out;
     VALUE ret;
@@ -295,7 +295,7 @@ krypt_asn1_header_value(VALUE self)
 
     /* TODO: sync */
     if (!header->consumed && header->value == Qnil) {
-	unsigned char *value;
+	uint8_t *value;
 	size_t length;
 	int tag;
 

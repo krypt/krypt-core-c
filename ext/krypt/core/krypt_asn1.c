@@ -11,7 +11,6 @@
 */
 
 #include "krypt-core.h"
-#include "krypt_asn1-shared.h"
 #include "krypt_asn1-internal.h"
 
 VALUE mKryptASN1;
@@ -248,7 +247,7 @@ krypt_asn1_data_new(krypt_instream *in, krypt_asn1_header *header)
     ID tag_class;
     krypt_asn1_data *data;
     krypt_asn1_object *encoding;
-    unsigned char *value = NULL;
+    uint8_t *value = NULL;
     ssize_t value_len;
 
     if ((value_len = krypt_asn1_get_value(in, header, &value)) == -1)
@@ -971,11 +970,11 @@ int_asn1_data_to_der_cached(krypt_asn1_object *object)
 {
     krypt_outstream *out;
     VALUE ret;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
 
     len = object->header->tag_len + object->header->length_len + object->bytes_len;
-    bytes = ALLOCA_N(unsigned char, len);
+    bytes = ALLOCA_N(uint8_t, len);
     out = krypt_outstream_new_bytes_prealloc(bytes, len);
 
     if (!krypt_asn1_object_encode(out, object)) {
@@ -993,7 +992,7 @@ int_asn1_data_to_der_non_cached(krypt_asn1_data *data, VALUE self)
 {
     VALUE string;
     krypt_outstream *out;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
 
     out = krypt_outstream_new_bytes_size(2048);
@@ -1088,8 +1087,8 @@ krypt_asn1_data_cmp(VALUE a, VALUE b)
     if (!rb_respond_to(b, sKrypt_ID_TO_DER)) return Qnil;
     vs2 = krypt_to_der(b);
 
-    if(!krypt_asn1_cmp_set_of((unsigned char *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
-	                      (unsigned char *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
+    if(!krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
+	                      (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
 	krypt_error_raise(eKryptASN1Error, "Error while comparing values");
     }
     return INT2NUM(result);
@@ -1324,7 +1323,7 @@ int_cons_encode_sub_elems(krypt_outstream *out, VALUE enumerable, krypt_asn1_dat
 }
 
 static int
-int_asn1_cons_update_length(VALUE ary, krypt_asn1_data *data, unsigned char **out, size_t *outlen)
+int_asn1_cons_update_length(VALUE ary, krypt_asn1_data *data, uint8_t **out, size_t *outlen)
 {
     krypt_outstream *bos = krypt_outstream_new_bytes_size(1024);
 
@@ -1340,7 +1339,7 @@ static int
 int_asn1_cons_encode_update(krypt_outstream *out, VALUE ary, krypt_asn1_data *data)
 {
     size_t len;
-    unsigned char *bytes = NULL;
+    uint8_t *bytes = NULL;
     krypt_asn1_header *header = data->object->header;
 
     if (!int_asn1_cons_update_length(ary, data, &bytes, &len)) goto error;
@@ -1464,7 +1463,7 @@ static VALUE
 int_asn1_fallback_decode(krypt_instream *in, krypt_instream *cache)
 {
     VALUE ret;
-    unsigned char *lookahead = NULL;
+    uint8_t *lookahead = NULL;
     size_t la_size;
     krypt_instream *bytes;
     krypt_instream *retry;

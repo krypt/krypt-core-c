@@ -30,7 +30,7 @@ static krypt_err_stack err_stack = { 0 };
 
 #define int_err_stack_empty()	(err_stack.count == 0)
 
-void
+static void
 int_err_stack_push(char *message, size_t len)
 {
     krypt_err_stack_elem *elem;
@@ -43,7 +43,7 @@ int_err_stack_push(char *message, size_t len)
     err_stack.count++;
 }
 
-char *
+static char *
 int_err_stack_pop()
 {
     char *message;
@@ -56,6 +56,30 @@ int_err_stack_pop()
     xfree(head);
     err_stack.count--;
     return message;
+}
+
+int
+krypt_has_errors(void)
+{
+    return !int_err_stack_empty();
+}
+
+int
+krypt_error_message(char *buf, int buf_len)
+{
+    krypt_err_stack_elem *head = err_stack.head;
+    int len = 0;
+
+    while (head) {
+	int cur_len;
+	char *message = head->message;
+	cur_len = snprintf(buf + len, buf_len, "%s%s", (len ? ": " : ""), message);
+	if (cur_len > 0)
+	    len += cur_len;
+	head = head->prev;
+    }
+
+    return len;
 }
 
 void

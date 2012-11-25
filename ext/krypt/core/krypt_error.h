@@ -15,6 +15,8 @@
 
 void krypt_error_add(const char *format, ...);
 
+int krypt_has_errors(void);
+int krypt_error_message(char *buf, int buf_len);
 VALUE krypt_error_create(VALUE exception_class, const char *format, ...);
 void krypt_error_raise(VALUE exception_class, const char *format, ...);
 void krypt_error_clear(void);

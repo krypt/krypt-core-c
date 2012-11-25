@@ -32,7 +32,7 @@ krypt_buffer_new_size(size_t size)
 }
 
 krypt_byte_buffer *
-krypt_buffer_new_prealloc(unsigned char *b, size_t len)
+krypt_buffer_new_prealloc(uint8_t *b, size_t len)
 {
     krypt_byte_buffer *ret;
     ret = krypt_buffer_new();
@@ -56,7 +56,7 @@ int_buffer_grow(krypt_byte_buffer *buffer, size_t cur_len)
 
     if (buffer->data == NULL) {
 	size_t alloc_size = buffer->init_size > cur_len ? buffer->init_size : cur_len;
-	buffer->data = ALLOC_N(unsigned char, alloc_size);
+	buffer->data = ALLOC_N(uint8_t, alloc_size);
 	buffer->limit = alloc_size;
 	return 1;
     }
@@ -72,13 +72,13 @@ int_buffer_grow(krypt_byte_buffer *buffer, size_t cur_len)
     	new_size *= KRYPT_BYTE_BUFFER_GROWTH_FACTOR;
     }
 
-    REALLOC_N(buffer->data, unsigned char, new_size);
+    REALLOC_N(buffer->data, uint8_t, new_size);
     buffer->limit = new_size; 
     return 1;
 }
 
 ssize_t
-krypt_buffer_write(krypt_byte_buffer *buffer, unsigned char *b, size_t len)
+krypt_buffer_write(krypt_byte_buffer *buffer, uint8_t *b, size_t len)
 {
     if (!b) return -1;
     if (len == 0) return 0;
@@ -113,7 +113,7 @@ krypt_buffer_free(krypt_byte_buffer *buffer)
 }
 
 size_t
-krypt_buffer_get_bytes_free(krypt_byte_buffer *buffer, unsigned char **out)
+krypt_buffer_get_bytes_free(krypt_byte_buffer *buffer, uint8_t **out)
 {
     size_t ret;
 

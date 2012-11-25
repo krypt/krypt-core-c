@@ -13,10 +13,10 @@
 #ifndef _KRYPT_B64_INTERNAL_H
 #define _KRYPT_B64_INTERNAL_H_
 
-ssize_t krypt_base64_encode(unsigned char *bytes, size_t len, int cols, unsigned char **out);
-int krypt_base64_buffer_encode_to(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len, int cols);
-ssize_t krypt_base64_decode(unsigned char *bytes, size_t len, unsigned char **out);
-int krypt_base64_buffer_decode_to(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len);
+ssize_t krypt_base64_encode(uint8_t *bytes, size_t len, int cols, uint8_t **out);
+int krypt_base64_buffer_encode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols);
+ssize_t krypt_base64_decode(uint8_t *bytes, size_t len, uint8_t **out);
+int krypt_base64_buffer_decode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len);
 
 #endif /* _KRYPT_B64_INTERNAL_H_ */
 

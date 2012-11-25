@@ -69,7 +69,7 @@ VALUE krypt_to_pem(VALUE obj);
 #include "krypt_hex-internal.h"
 
 /* helper for integer encoding/decoding */
-void krypt_compute_twos_complement(unsigned char *dest, unsigned char *src, size_t len);
+void krypt_compute_twos_complement(uint8_t *dest, uint8_t *src, size_t len);
 
 void Init_kryptcore(void);
 void Init_krypt_io(void);

@@ -34,7 +34,7 @@ typedef struct krypt_instream_chunked {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_CHUNKED, krypt_instream_chunked)
 
 static krypt_instream_chunked* int_chunked_alloc(void);
-static ssize_t int_chunked_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_chunked_read(krypt_instream *in, uint8_t *buf, size_t len);
 static int int_chunked_seek(krypt_instream *in, off_t offset, int whence);
 static void int_chunked_mark(krypt_instream *in);
 static void int_chunked_free(krypt_instream *in);
@@ -93,10 +93,10 @@ int_read_new_header(krypt_instream_chunked *in)
 
 static size_t
 int_read_header_bytes(krypt_instream_chunked *in,
-		      unsigned char* bytes, 
+		      uint8_t * bytes, 
 		      size_t bytes_len, 
 		      enum krypt_chunked_state next_state,
-		      unsigned char *buf,
+		      uint8_t *buf,
 		      size_t len)
 {
     size_t to_read;
@@ -117,7 +117,7 @@ int_read_header_bytes(krypt_instream_chunked *in,
 }
 
 static ssize_t
-int_read_value(krypt_instream_chunked *in, unsigned char *buf, size_t len)
+int_read_value(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 {
     ssize_t read;
 
@@ -154,7 +154,7 @@ do {								\
 
 /* TODO: check overflow */
 static ssize_t
-int_read_single_element(krypt_instream_chunked *in, unsigned char *buf, size_t len)
+int_read_single_element(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 {
     ssize_t read = 0;
     size_t total = 0;
@@ -207,7 +207,7 @@ do {						\
 }
 
 static ssize_t
-int_read(krypt_instream_chunked *in, unsigned char *buf, size_t len)
+int_read(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 {
     ssize_t read = 0;
     size_t total = 0;
@@ -226,7 +226,7 @@ int_read(krypt_instream_chunked *in, unsigned char *buf, size_t len)
 }
 
 static ssize_t
-int_chunked_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_chunked_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_chunked *in;
     

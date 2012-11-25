@@ -25,10 +25,10 @@ static const char krypt_b64_table_inv[] = {
 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,
 -1,-1,-1,-1,-1,-1,
 26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51};
-static unsigned char krypt_b64_separator[] = { '\r', '\n' };
+static uint8_t krypt_b64_separator[] = { '\r', '\n' };
 
-static unsigned char krypt_b64_out_buf[4];
-static unsigned char krypt_b64_in_buf[3];
+static uint8_t krypt_b64_out_buf[4];
+static uint8_t krypt_b64_in_buf[3];
 
 #define KRYPT_BASE64_INV_MAX 123
 #define KRYPT_BASE64_DECODE 0
@@ -58,7 +58,7 @@ int_write_int(krypt_outstream *out, int n)
 }
 
 static int
-int_write_update(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len)
+int_write_update(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len)
 {
     size_t i;
     int n;
@@ -72,7 +72,7 @@ int_write_update(krypt_outstream *out, unsigned char *bytes, size_t off, size_t 
 }
 
 static int
-int_write_update_cols(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len, int cols)
+int_write_update_cols(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
 {
     size_t i;
     int n, linepos = 0;
@@ -92,7 +92,7 @@ int_write_update_cols(krypt_outstream *out, unsigned char *bytes, size_t off, si
 }
 
 static inline void
-int_encode_final(unsigned char *bytes, int remainder)
+int_encode_final(uint8_t *bytes, int remainder)
 {
     int n;
     
@@ -104,7 +104,7 @@ int_encode_final(unsigned char *bytes, int remainder)
 }
 
 static int
-int_write_final(krypt_outstream *out, unsigned char *bytes, int remainder, int crlf)
+int_write_final(krypt_outstream *out, uint8_t *bytes, int remainder, int crlf)
 {
     if (remainder) {
 	int_encode_final(bytes, remainder);
@@ -119,7 +119,7 @@ int_write_final(krypt_outstream *out, unsigned char *bytes, int remainder, int c
 }
 
 int
-krypt_base64_buffer_encode_to(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len, int cols)
+krypt_base64_buffer_encode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
 {
     int remainder;
 
@@ -137,7 +137,7 @@ krypt_base64_buffer_encode_to(krypt_outstream *out, unsigned char *bytes, size_t
 }
 
 ssize_t
-krypt_base64_encode(unsigned char *bytes, size_t len, int cols, unsigned char **out)
+krypt_base64_encode(uint8_t *bytes, size_t len, int cols, uint8_t **out)
 {
     size_t retlen; 
     krypt_outstream *outstream;
@@ -222,7 +222,7 @@ int_read_final(krypt_outstream *out, int n, int remainder)
 }
 
 int
-krypt_base64_buffer_decode_to(krypt_outstream *out, unsigned char *bytes, size_t off, size_t len)
+krypt_base64_buffer_decode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len)
 {
     size_t i;
     int n = 0;
@@ -235,7 +235,7 @@ krypt_base64_buffer_decode_to(krypt_outstream *out, unsigned char *bytes, size_t
     }
 
     for (i=0; i < len; i++) {
-	unsigned char b = bytes[off + i];
+	uint8_t b = bytes[off + i];
 	if (b == '=')
 	   break;
 	if (b > KRYPT_BASE64_INV_MAX)
@@ -255,7 +255,7 @@ krypt_base64_buffer_decode_to(krypt_outstream *out, unsigned char *bytes, size_t
 }
 	
 ssize_t
-krypt_base64_decode(unsigned char *bytes, size_t len, unsigned char **out)
+krypt_base64_decode(uint8_t *bytes, size_t len, uint8_t **out)
 {
     size_t retlen;
     krypt_outstream *outstream;
@@ -294,12 +294,12 @@ krypt_base64_module_decode(VALUE self, VALUE data)
     VALUE ret;
     size_t len;
     ssize_t result_len;
-    unsigned char *bytes;
-    unsigned char *result = NULL;
+    uint8_t *bytes;
+    uint8_t *result = NULL;
 
     StringValue(data);
     len = (size_t) RSTRING_LEN(data);
-    bytes = (unsigned char *) RSTRING_PTR(data);
+    bytes = (uint8_t *) RSTRING_PTR(data);
 
     result_len = krypt_base64_decode(bytes, len, &result);
 
@@ -332,8 +332,8 @@ krypt_base64_module_encode(int argc, VALUE *argv, VALUE self)
     int c;
     size_t len;
     ssize_t result_len;
-    unsigned char *bytes;
-    unsigned char *result = NULL;
+    uint8_t *bytes;
+    uint8_t *result = NULL;
 
     rb_scan_args(argc, argv, "11", &data, &cols);
 
@@ -346,7 +346,7 @@ krypt_base64_module_encode(int argc, VALUE *argv, VALUE self)
 
     StringValue(data);
     len = (size_t) RSTRING_LEN(data);
-    bytes = (unsigned char *) RSTRING_PTR(data);
+    bytes = (uint8_t *) RSTRING_PTR(data);
 
     result_len = krypt_base64_encode(bytes, len, c, &result);
 

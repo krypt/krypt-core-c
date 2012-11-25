@@ -59,7 +59,7 @@ krypt_to_pem_if_possible(VALUE obj)
 }
 
 void
-krypt_compute_twos_complement(unsigned char *dest, unsigned char *src, size_t len)
+krypt_compute_twos_complement(uint8_t *dest, uint8_t *src, size_t len)
 {
     size_t i;
 

@@ -17,10 +17,10 @@
 #define CHAR_BIT_MINUS_ONE     (CHAR_BIT - 1)
 
 static int
-int_asn1_encode_default(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_default(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     size_t l;
-    unsigned char *ret;
+    uint8_t *ret;
 
     if (NIL_P(value)) {
 	*out = NULL;
@@ -30,7 +30,7 @@ int_asn1_encode_default(VALUE self, VALUE value, unsigned char **out, size_t *le
 
     StringValue(value);
     l = RSTRING_LEN(value);
-    ret = ALLOC_N(unsigned char, l);
+    ret = ALLOC_N(uint8_t, l);
     memcpy(ret, RSTRING_PTR(value), l);
     *out = ret;
     *len = l;
@@ -38,7 +38,7 @@ int_asn1_encode_default(VALUE self, VALUE value, unsigned char **out, size_t *le
 }
 
 static int
-int_asn1_decode_default(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_default(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     if (len == 0 || bytes == NULL)
 	*out = rb_str_new2("");
@@ -63,18 +63,18 @@ static const long SUB_ID_LIMIT_ENCODE = LONG_MAX / 10;
 static const long SUB_ID_LIMIT_PARSE = LONG_MAX >> CHAR_BIT_MINUS_ONE;
 static const size_t MAX_LONG_DIGITS = sizeof(long) * 2 * 1.21f + 1; /* times 2 -> hex representation, 1.21 ~ log10(16) */
 
-static int int_encode_object_id(unsigned char*, size_t, unsigned char **, size_t *);
-static int int_decode_object_id(unsigned char*, size_t, VALUE *);
-static int int_parse_utc_time(unsigned char *, size_t, VALUE *);
-static int int_parse_generalized_time(unsigned char *, size_t, VALUE *);
-static int int_encode_utc_time(VALUE, unsigned char **, size_t *);
-static int int_encode_generalized_time(VALUE, unsigned char **, size_t *);
-static int int_decode_integer(unsigned char *, size_t, VALUE *);
+static int int_encode_object_id(uint8_t*, size_t, uint8_t **, size_t *);
+static int int_decode_object_id(uint8_t*, size_t, VALUE *);
+static int int_parse_utc_time(uint8_t *, size_t, VALUE *);
+static int int_parse_generalized_time(uint8_t *, size_t, VALUE *);
+static int int_encode_utc_time(VALUE, uint8_t **, size_t *);
+static int int_encode_generalized_time(VALUE, uint8_t **, size_t *);
+static int int_decode_integer(uint8_t *, size_t, VALUE *);
 
 #define sanity_check(b)		if (!b) return 0;
 
 static int
-int_asn1_encode_eoc(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_eoc(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     *out = NULL;
     *len = 0;
@@ -82,7 +82,7 @@ int_asn1_encode_eoc(VALUE self, VALUE value, unsigned char **out, size_t *len)
 }
 
 static int
-int_asn1_decode_eoc(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_eoc(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     if (len != 0) {
 	krypt_error_add("Invalid encoding for END OF CONTENTS found - must be empty");
@@ -103,11 +103,11 @@ int_asn1_validate_eoc(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_boolean(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_boolean(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
-    unsigned char *b;
+    uint8_t *b;
 
-    b = ALLOC(unsigned char);
+    b = ALLOC(uint8_t);
     *b = RTEST(value) ? 0xff : 0x0;
     *out = b;
     *len = 1;
@@ -115,9 +115,9 @@ int_asn1_encode_boolean(VALUE self, VALUE value, unsigned char **out, size_t *le
 }
 
 static int
-int_asn1_decode_boolean(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_boolean(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
-    unsigned char b;
+    uint8_t b;
 
     sanity_check(bytes);
     if (len != 1) {
@@ -143,7 +143,7 @@ int_asn1_validate_boolean(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_integer(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_integer(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     long num;
     
@@ -161,7 +161,7 @@ int_asn1_encode_integer(VALUE self, VALUE value, unsigned char **out, size_t *le
 }
 
 static int
-int_asn1_decode_integer(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_integer(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     if (len == 0) {
 	krypt_error_add("Invalid zero length value for INTEGER found");
@@ -201,11 +201,11 @@ int_asn1_validate_integer(VALUE self, VALUE value)
 #define int_check_unused_bits(b)	if ((b) < 0 || (b) > 7)	return 0;
 
 static int
-int_asn1_encode_bit_string(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_bit_string(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     int unused_bits;
     size_t l;
-    unsigned char *bytes;
+    uint8_t *bytes;
 
     unused_bits = NUM2INT(rb_ivar_get(self, sKrypt_IV_UNUSED_BITS));
     int_check_unused_bits(unused_bits);
@@ -216,7 +216,7 @@ int_asn1_encode_bit_string(VALUE self, VALUE value, unsigned char **out, size_t 
 	krypt_error_add("Size of BIT STRING too long: %ld", l);
 	return 0;
     }
-    bytes = ALLOC_N(unsigned char, l + 1);
+    bytes = ALLOC_N(uint8_t, l + 1);
     bytes[0] = unused_bits & 0xff;
     memcpy(bytes + 1, RSTRING_PTR(value), l);
     *out = bytes;
@@ -225,7 +225,7 @@ int_asn1_encode_bit_string(VALUE self, VALUE value, unsigned char **out, size_t 
 }
 
 static int
-int_asn1_decode_bit_string(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_bit_string(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     int unused_bits;
 
@@ -251,7 +251,7 @@ int_asn1_validate_bit_string(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_null(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_null(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     *out = NULL;
     *len = 0;
@@ -259,7 +259,7 @@ int_asn1_encode_null(VALUE self, VALUE value, unsigned char **out, size_t *len)
 }
 
 static int
-int_asn1_decode_null(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_null(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     if (len != 0) {
 	krypt_error_add("Invalid encoding for NULL value found - must be empty");
@@ -280,12 +280,12 @@ int_asn1_validate_null(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_object_id(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_object_id(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
-    unsigned char *str;
+    uint8_t *str;
 
     StringValue(value);
-    str = (unsigned char *)RSTRING_PTR(value);
+    str = (uint8_t *)RSTRING_PTR(value);
     if (!int_encode_object_id(str, RSTRING_LEN(value), out, len)) {
 	krypt_error_add("Encoding OBJECT IDENTIFIER failed");
 	return 0;
@@ -294,7 +294,7 @@ int_asn1_encode_object_id(VALUE self, VALUE value, unsigned char **out, size_t *
 }
 
 static int
-int_asn1_decode_object_id(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_object_id(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     sanity_check(bytes);
     if (!int_decode_object_id(bytes, len, out)) {
@@ -315,7 +315,7 @@ int_asn1_validate_object_id(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_utf8_string(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_utf8_string(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     rb_encoding *src_encoding;
 
@@ -345,7 +345,7 @@ int_asn1_encode_utf8_string(VALUE self, VALUE value, unsigned char **out, size_t
 }
 
 static int
-int_asn1_decode_utf8_string(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_utf8_string(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     if (!int_asn1_decode_default(self, bytes, len, out)) {
 	krypt_error_add("Decoding UTF8 STRING failed");
@@ -357,7 +357,7 @@ int_asn1_decode_utf8_string(VALUE self, unsigned char *bytes, size_t len, VALUE 
 }
 
 static int
-int_asn1_encode_utc_time(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_utc_time(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     if (!int_encode_utc_time(value, out, len)) {
 	krypt_error_add("Encoding UTC TIME failed");
@@ -367,7 +367,7 @@ int_asn1_encode_utc_time(VALUE self, VALUE value, unsigned char **out, size_t *l
 }
 
 static int
-int_asn1_decode_utc_time(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_utc_time(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     sanity_check(bytes);
     if (!int_parse_utc_time(bytes, len, out)) {
@@ -396,7 +396,7 @@ int_asn1_validate_time(VALUE self, VALUE value)
 }
 
 static int
-int_asn1_encode_generalized_time(VALUE self, VALUE value, unsigned char **out, size_t *len)
+int_asn1_encode_generalized_time(VALUE self, VALUE value, uint8_t **out, size_t *len)
 {
     if (!int_encode_generalized_time(value, out, len)) {
 	krypt_error_add("Encoding GENERALIZED TIME failed");
@@ -406,7 +406,7 @@ int_asn1_encode_generalized_time(VALUE self, VALUE value, unsigned char **out, s
 }
 
 static int
-int_asn1_decode_generalized_time(VALUE self, unsigned char *bytes, size_t len, VALUE *out)
+int_asn1_decode_generalized_time(VALUE self, uint8_t *bytes, size_t len, VALUE *out)
 {
     sanity_check(bytes);
     if (!int_parse_generalized_time(bytes, len, out)) {
@@ -461,9 +461,9 @@ do {								\
 } while (0)
 
 static long
-int_get_sub_id(unsigned char *str, size_t len, size_t *offset)
+int_get_sub_id(uint8_t *str, size_t len, size_t *offset)
 {
-    unsigned char c;
+    uint8_t c;
     ssize_t ret = 0;
     size_t off = *offset;
 
@@ -508,8 +508,8 @@ static int
 int_write_long(krypt_byte_buffer *buf, long cur)
 {
     int num_shifts, i, ret;
-    unsigned char b;
-    unsigned char *bytes;
+    uint8_t b;
+    uint8_t *bytes;
 
     if (cur == 0) {
 	b = 0x0;
@@ -521,7 +521,7 @@ int_write_long(krypt_byte_buffer *buf, long cur)
     }
 
     int_determine_num_shifts(num_shifts, cur, CHAR_BIT_MINUS_ONE);
-    bytes = ALLOC_N(unsigned char, num_shifts);
+    bytes = ALLOC_N(uint8_t, num_shifts);
 
     for (i = num_shifts - 1; i >= 0; i--) {
 	b = cur & 0x7f;
@@ -558,7 +558,7 @@ do {							\
 } while (0)
 
 static int
-int_encode_object_id(unsigned char *str, size_t len, unsigned char **out, size_t *outlen)
+int_encode_object_id(uint8_t *str, size_t len, uint8_t **out, size_t *outlen)
 {
     size_t offset = 0;
     long first, second, cur;
@@ -587,7 +587,7 @@ error:
 }
 
 static long
-int_parse_sub_id(unsigned char* bytes, size_t len, size_t *offset)
+int_parse_sub_id(uint8_t* bytes, size_t len, size_t *offset)
 {
     long num = 0;
     size_t off = *offset;
@@ -628,7 +628,7 @@ int_set_first_sub_ids(long combined, long *first, long *second)
 #define int_append_num(buf, cur, numbuf)				\
 do {									\
     int nl;								\
-    unsigned char b = (unsigned char)'.';  				\
+    uint8_t b = (uint8_t)'.'; 		 				\
     if (krypt_buffer_write((buf), &b, 1) < 0) {				\
 	krypt_error_add("Writing to buffer failed");			\
 	goto error;							\
@@ -641,14 +641,14 @@ do {									\
 } while (0)
 
 static int
-int_decode_object_id(unsigned char *bytes, size_t len, VALUE *out)
+int_decode_object_id(uint8_t *bytes, size_t len, VALUE *out)
 {
     long cur, first, second;
     size_t offset = 0;
     krypt_byte_buffer *buffer;
     int numlen;
-    unsigned char numbuf[MAX_LONG_DIGITS];
-    unsigned char *retbytes;
+    uint8_t numbuf[MAX_LONG_DIGITS];
+    uint8_t *retbytes;
     size_t retlen;
 
     sanity_check(bytes);
@@ -711,7 +711,7 @@ do {								\
 } while (0)
 
 static int
-int_encode_utc_time(VALUE value, unsigned char **out, size_t *len)
+int_encode_utc_time(VALUE value, uint8_t **out, size_t *len)
 {
     time_t time;
     struct tm tm;
@@ -738,13 +738,13 @@ int_encode_utc_time(VALUE value, unsigned char **out, size_t *len)
 	return 0;
     }
 
-    *out = (unsigned char *) ret;
+    *out = (uint8_t *) ret;
     *len = 13;
     return 1;
 }
 
 static int
-int_parse_utc_time(unsigned char *bytes, size_t len, VALUE *out)
+int_parse_utc_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
     struct tm tm = { 0 };
@@ -781,7 +781,7 @@ int_parse_utc_time(unsigned char *bytes, size_t len, VALUE *out)
 }
 
 static int
-int_encode_generalized_time(VALUE value, unsigned char **out, size_t *len)
+int_encode_generalized_time(VALUE value, uint8_t **out, size_t *len)
 {
     time_t time;
     struct tm tm;
@@ -808,13 +808,13 @@ int_encode_generalized_time(VALUE value, unsigned char **out, size_t *len)
 	return 0;
     }
 
-    *out = (unsigned char *)ret;
+    *out = (uint8_t *)ret;
     *len = 15;
     return 1;
 }
 
 static int
-int_parse_generalized_time(unsigned char *bytes, size_t len, VALUE *out)
+int_parse_generalized_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
     struct tm tm = { 0 };
@@ -847,13 +847,13 @@ int_parse_generalized_time(unsigned char *bytes, size_t len, VALUE *out)
 }
 
 size_t
-krypt_asn1_encode_integer(long num, unsigned char **out)
+krypt_asn1_encode_integer(long num, uint8_t **out)
 {
     int len, i, need_extra_byte = 0;
     int sign = num >= 0;
-    unsigned char *bytes;
-    unsigned char *ptr;
-    unsigned char numbytes[SIZEOF_LONG];
+    uint8_t *bytes;
+    uint8_t *ptr;
+    uint8_t numbytes[SIZEOF_LONG];
 
     for (i = 0; i < SIZEOF_LONG; ++i) {
 	numbytes[i] = num & 0xff;
@@ -866,12 +866,12 @@ krypt_asn1_encode_integer(long num, unsigned char **out)
     }
     len = i + 1;
     if (need_extra_byte) {
-	bytes = ALLOC_N(unsigned char, len + 1);
+	bytes = ALLOC_N(uint8_t, len + 1);
 	ptr = bytes;
 	*ptr++ = sign ? 0x00 : 0xff;
     }
     else {
-	bytes = ALLOC_N(unsigned char, len);
+	bytes = ALLOC_N(uint8_t, len);
 	ptr = bytes;
     }
     while (len > 0) {
@@ -882,7 +882,7 @@ krypt_asn1_encode_integer(long num, unsigned char **out)
 }
 
 static int
-int_decode_integer_to_long(unsigned char *bytes, size_t len, long *out)
+int_decode_integer_to_long(uint8_t *bytes, size_t len, long *out)
 {
     unsigned long num = 0;
     size_t i;
@@ -899,7 +899,7 @@ int_decode_integer_to_long(unsigned char *bytes, size_t len, long *out)
 }
 
 static int
-int_decode_positive_integer(unsigned char *bytes, size_t len, VALUE *out)
+int_decode_positive_integer(uint8_t *bytes, size_t len, VALUE *out)
 {
     long num;
 
@@ -909,13 +909,13 @@ int_decode_positive_integer(unsigned char *bytes, size_t len, VALUE *out)
 }
 
 static int
-int_decode_negative_integer(unsigned char *bytes, size_t len, VALUE *out)
+int_decode_negative_integer(uint8_t *bytes, size_t len, VALUE *out)
 {
     long num;
-    unsigned char *copy;
+    uint8_t *copy;
     int result;
 
-    copy = ALLOC_N(unsigned char, len);
+    copy = ALLOC_N(uint8_t, len);
     krypt_compute_twos_complement(copy, bytes, len);
     result = int_decode_integer_to_long(copy, len, &num);
     xfree(copy);
@@ -925,7 +925,7 @@ int_decode_negative_integer(unsigned char *bytes, size_t len, VALUE *out)
 }
 
 static int
-int_decode_integer(unsigned char *bytes, size_t len, VALUE *out)
+int_decode_integer(uint8_t *bytes, size_t len, VALUE *out)
 {
     if (bytes[0] & 0x80) {
 	return int_decode_negative_integer(bytes, len, out);

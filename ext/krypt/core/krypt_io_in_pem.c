@@ -30,7 +30,7 @@ typedef struct krypt_pem_parse_ctx_st {
 
 typedef struct krypt_b64_buffer_st {
     krypt_instream *inner;
-    unsigned char *buffer;
+    uint8_t *buffer;
     size_t len;
     size_t off;
     enum krypt_pem_state state;
@@ -46,7 +46,7 @@ typedef struct krypt_instream_pem_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_PEM, krypt_instream_pem)
 
 static krypt_instream_pem* int_pem_alloc(void);
-static ssize_t int_pem_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_pem_read(krypt_instream *in, uint8_t *buf, size_t len);
 static int int_pem_seek(krypt_instream *in, off_t offset, int whence);
 static void int_pem_mark(krypt_instream *in);
 static void int_pem_free(krypt_instream *in);
@@ -149,7 +149,7 @@ krypt_instream_pem_free_wrapper(krypt_instream *instream)
 }
 
 size_t
-krypt_pem_get_last_name(krypt_instream *instream, unsigned char **out)
+krypt_pem_get_last_name(krypt_instream *instream, uint8_t **out)
 {
     krypt_instream_pem *in;
     krypt_b64_buffer *b64;
@@ -169,7 +169,7 @@ krypt_pem_get_last_name(krypt_instream *instream, unsigned char **out)
     }
 
     retlen = strlen(b64->name);
-    *out = ALLOC_N(unsigned char, retlen);
+    *out = ALLOC_N(uint8_t, retlen);
     memcpy(*out, b64->name, retlen);
     return retlen;
 }
@@ -274,7 +274,7 @@ int_b64_fill(krypt_b64_buffer *in)
 		    in->state = FOOTER;
 		}
 		else {
-		    if (!krypt_base64_buffer_decode_to(out, (unsigned char *) linebuf, 0, linelen)) {
+		    if (!krypt_base64_buffer_decode_to(out, (uint8_t *) linebuf, 0, linelen)) {
 			krypt_error_add("Could not decode Base64 data");
 			return 0;
 		    }
@@ -329,7 +329,7 @@ int_b64_fill(krypt_b64_buffer *in)
 }
 
 static size_t
-int_consume_bytes(krypt_b64_buffer *in, unsigned char *buf, size_t len)
+int_consume_bytes(krypt_b64_buffer *in, uint8_t *buf, size_t len)
 {
     size_t available, toread;
 
@@ -344,7 +344,7 @@ int_consume_bytes(krypt_b64_buffer *in, unsigned char *buf, size_t len)
 }
 
 static ssize_t
-int_b64_read(krypt_b64_buffer *in, unsigned char *buf, size_t len)
+int_b64_read(krypt_b64_buffer *in, uint8_t *buf, size_t len)
 {
     size_t total = 0;
 
@@ -367,7 +367,7 @@ int_b64_read(krypt_b64_buffer *in, unsigned char *buf, size_t len)
 }
 
 static ssize_t
-int_pem_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_pem_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_pem *in;
     if (!buf) return -2;

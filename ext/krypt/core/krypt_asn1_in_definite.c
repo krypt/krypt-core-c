@@ -22,7 +22,7 @@ typedef struct krypt_instream_definite_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_DEFINITE, krypt_instream_definite)
 
 static krypt_instream_definite* int_definite_alloc(void);
-static ssize_t int_definite_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_definite_read(krypt_instream *in, uint8_t *buf, size_t len);
 static int int_definite_seek(krypt_instream *in, off_t offset, int whence);
 static void int_definite_mark(krypt_instream *in);
 static void int_definite_free(krypt_instream *in);
@@ -59,7 +59,7 @@ int_definite_alloc(void)
 }
 
 static ssize_t
-int_definite_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_definite_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_definite *in;
     size_t to_read;

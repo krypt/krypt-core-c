@@ -34,14 +34,14 @@ krypt_gmtime_r(const time_t *tp, struct tm *result)
 
 #ifdef HAVE_RB_BIG_PACK
 int
-krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
+krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
 {
     int len, i, j;
     long num_longs, biglen, divisor;
     unsigned long *longs;
-    unsigned char* bytes;
-    unsigned char* ptr;
-    unsigned char msb;
+    uint8_t *bytes;
+    uint8_t *ptr;
+    uint8_t msb;
     unsigned long l;
 
     biglen = RBIGNUM_LEN(bignum);
@@ -54,17 +54,17 @@ krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
     if (RBIGNUM_SIGN(bignum) == ((msb & 1) == 1)) {
 	/* We can't use int_encode_integer here because longs are unsigned */
 	len = num_longs * SIZEOF_LONG + 1;
-	bytes = ALLOC_N(unsigned char, len);
+	bytes = ALLOC_N(uint8_t, len);
 	ptr = bytes;
 	*ptr++ = RBIGNUM_SIGN(bignum) ? 0x00 : 0xff;
     }
     else {
-	unsigned char* buf;
+	uint8_t *buf;
 	size_t encoded;
 
 	encoded = krypt_asn1_encode_integer(longs[num_longs - 1], &buf);
 	len = encoded + (num_longs - 1) * SIZEOF_LONG;
-	bytes = ALLOC_N(unsigned char, len);
+	bytes = ALLOC_N(uint8_t, len);
 	ptr = bytes;
 	memcpy(ptr, buf, encoded);
 	ptr += encoded;
@@ -86,14 +86,14 @@ krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
 }
 #else
 int
-krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
+krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
 {
     VALUE hexstr;
     int sign;
     char *hexstrbytes;
     int free_hex = 0;
     long hexstrlen;
-    unsigned char *numbytes;
+    uint8_t *numbytes;
     ssize_t numlen;
 
     sign = RBIGNUM_NEGATIVE_P(bignum);
@@ -124,7 +124,7 @@ krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
     if (sign) {
 	krypt_compute_twos_complement(numbytes, numbytes, numlen);
     } else if (numbytes[0] & 0x80) {
-	unsigned char *normalized = ALLOC_N(unsigned char, numlen + 1);
+	uint8_t *normalized = ALLOC_N(uint8_t, numlen + 1);
 	normalized[0] = 0x0;
 	memcpy(normalized + 1, numbytes, numlen);
 	xfree(numbytes);
@@ -141,7 +141,7 @@ krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *outlen)
 
 #ifdef HAVE_RB_BIG_PACK
 int
-krypt_asn1_decode_bignum(unsigned char *bytes, size_t len, VALUE *out)
+krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
 {
     long num_longs;
     int i, j, pos, sign;
@@ -174,18 +174,18 @@ krypt_asn1_decode_bignum(unsigned char *bytes, size_t len, VALUE *out)
     return 1;
 }
 #else
-int krypt_asn1_decode_bignum(unsigned char *bytes, size_t len, VALUE *out)
+int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
 {
     int sign;
     ssize_t hexlen;
-    unsigned char *absolute;
+    uint8_t *absolute;
     int free_abs = 0;
     char *hexnum;
     char *chexnum;
 
     sign = bytes[0] & 0x80;
     if (sign) {
-	absolute = ALLOC_N(unsigned char, len); 
+	absolute = ALLOC_N(uint8_t, len); 
 	krypt_compute_twos_complement(absolute, bytes, len);
 	free_abs = 1;
     } else {

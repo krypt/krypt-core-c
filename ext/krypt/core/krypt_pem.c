@@ -20,8 +20,8 @@ int_consume_stream(krypt_instream *in, VALUE *vout)
 {
     krypt_outstream *out;
     size_t len;
-    unsigned char *str;
-    unsigned char buf[KRYPT_IO_BUF_SIZE];
+    uint8_t *str;
+    uint8_t buf[KRYPT_IO_BUF_SIZE];
     ssize_t read;
     
     out = krypt_outstream_new_bytes_size(KRYPT_IO_BUF_SIZE);
@@ -96,7 +96,7 @@ krypt_pem_decode(VALUE self, VALUE pem)
 
 	rb_ary_push(ary, der);
 	if(rb_block_given_p()) {
-	    unsigned char *name;
+	    uint8_t *name;
 	    size_t len;
 	    VALUE vname;
 	    len = krypt_pem_get_last_name(in, &name);

@@ -53,14 +53,14 @@ krypt_md_reset(krypt_md *md)
 }
 
 int
-krypt_md_update(krypt_md *md, unsigned char *data, size_t len)
+krypt_md_update(krypt_md *md, const void *data, size_t len)
 {
     int_check_digest_has(md, md_update);
     return md->methods->md_update(md, data, len);
 }
 
 int
-krypt_md_final(krypt_md *md, unsigned char **digest, size_t *len)
+krypt_md_final(krypt_md *md, uint8_t **digest, size_t *len)
 {
     int_check_digest_has(md, md_final);
     if (!md->methods->md_final(md, digest, len)) return 0;
@@ -68,7 +68,7 @@ krypt_md_final(krypt_md *md, unsigned char **digest, size_t *len)
 }
 
 int
-krypt_md_digest(krypt_md *md, unsigned char *data, size_t len, unsigned char **digest, size_t *digest_len)
+krypt_md_digest(krypt_md *md, const uint8_t *data, size_t len, uint8_t **digest, size_t *digest_len)
 {
     int_check_digest_has(md, md_digest);
     if(!md->methods->md_digest(md, data, len, digest, digest_len)) return 0;
@@ -76,14 +76,14 @@ krypt_md_digest(krypt_md *md, unsigned char *data, size_t len, unsigned char **d
 }
 
 int
-krypt_md_digest_length(krypt_md *md, int *len)
+krypt_md_digest_length(krypt_md *md, size_t *len)
 {
     int_check_digest_has(md, md_digest_length);
     return md->methods->md_digest_length(md, len);
 }
 
 int
-krypt_md_block_length(krypt_md *md, int *len)
+krypt_md_block_length(krypt_md *md, size_t *len)
 {
     int_check_digest_has(md, md_block_length);
     return md->methods->md_block_length(md, len);
@@ -169,12 +169,12 @@ static VALUE
 krypt_digest_update(VALUE self, VALUE data)
 {
     krypt_md *md;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
 
     int_md_get(self, md);
     StringValue(data);
-    bytes = (unsigned char *) RSTRING_PTR(data);
+    bytes = (uint8_t *) RSTRING_PTR(data);
     len = (size_t) RSTRING_LEN(data);
     if (!krypt_md_update(md, bytes, len)) {
 	rb_raise(eKryptDigestError, "Error while updating digest");
@@ -185,14 +185,14 @@ krypt_digest_update(VALUE self, VALUE data)
 static VALUE
 int_digest_data(krypt_md *md, VALUE data)
 {
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
-    unsigned char *digest;
+    uint8_t *digest;
     size_t digest_len;
     VALUE ret;
 
     StringValue(data);
-    bytes = (unsigned char *) RSTRING_PTR(data);
+    bytes = (uint8_t *) RSTRING_PTR(data);
     len = (size_t) RSTRING_LEN(data);
     if (!krypt_md_digest(md, bytes, len, &digest, &digest_len)) {
 	rb_raise(eKryptDigestError, "Error while computing digest");
@@ -205,7 +205,7 @@ int_digest_data(krypt_md *md, VALUE data)
 static VALUE
 int_digest_final(krypt_md *md)
 {
-    unsigned char *digest;
+    uint8_t *digest;
     size_t len;
     VALUE ret;
     if (!krypt_md_final(md, &digest, &len)) {
@@ -261,11 +261,11 @@ static VALUE
 krypt_digest_hexdigest(int argc, VALUE *args, VALUE self)
 {
     VALUE digest, ret;
-    unsigned char *bytes;
+    uint8_t *bytes;
     ssize_t len;
 
     digest = krypt_digest_digest(argc, args, self);
-    len = krypt_hex_encode((unsigned char *) RSTRING_PTR(digest), RSTRING_LEN(digest), &bytes);
+    len = krypt_hex_encode((uint8_t *) RSTRING_PTR(digest), RSTRING_LEN(digest), &bytes);
     if (len == -1)
 	rb_raise(eKryptDigestError, "Error while hex-encoding digest");
     ret = rb_str_new((const char *) bytes, len);
@@ -289,7 +289,7 @@ static VALUE
 krypt_digest_digest_length(VALUE self)
 {
     krypt_md *md;
-    int len;
+    size_t len;
 
     int_md_get(self, md);
     if (!krypt_md_digest_length(md, &len)) {
@@ -315,7 +315,7 @@ static VALUE
 krypt_digest_block_length(VALUE self)
 {
     krypt_md *md;
-    int len;
+    size_t len;
 
     int_md_get(self, md);
     if (!krypt_md_block_length(md, &len)) {
