@@ -91,15 +91,4 @@ Init_kryptcore(void)
     Init_krypt_asn1();
     Init_krypt_native_provider();
     Init_krypt_digest();
-
-    /* Init per VM, just a precaution */
-    InitVM(kryptcore);
-}
-
-/* This is just a precaution to remind us of thread safety
- * issues in case there would be no GVL */ 
-void
-InitVM_kryptcore(void)
-{
-    InitVM_krypt_io();
 }

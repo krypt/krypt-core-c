@@ -52,7 +52,6 @@ end
 message "=== Checking Ruby features ===\n"
 
 have_header("ruby/io.h")
-have_func("rb_io_check_byte_readable")
 have_func("rb_big_pack")
 have_func("rb_enumeratorize")
 have_func("rb_str_encode")

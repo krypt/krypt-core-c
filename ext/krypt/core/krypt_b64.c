@@ -49,16 +49,16 @@ int_encode_int(int n)
 }
 
 static int
-int_write_int(krypt_outstream *out, int n)
+int_write_int(binyo_outstream *out, int n)
 {
     int_encode_int(n);
-    if (krypt_outstream_write(out, krypt_b64_out_buf, 4) < 0)
+    if (binyo_outstream_write(out, krypt_b64_out_buf, 4) < 0)
 	return 0;
     return 1;
 }
 
 static int
-int_write_update(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len)
+int_write_update(binyo_outstream *out, uint8_t *bytes, size_t off, size_t len)
 {
     size_t i;
     int n;
@@ -72,7 +72,7 @@ int_write_update(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len)
 }
 
 static int
-int_write_update_cols(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
+int_write_update_cols(binyo_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
 {
     size_t i;
     int n, linepos = 0;
@@ -83,7 +83,7 @@ int_write_update_cols(krypt_outstream *out, uint8_t *bytes, size_t off, size_t l
 	    return 0;
 	linepos += 4;
 	if (linepos >= cols) {
-	    if (krypt_outstream_write(out, krypt_b64_separator, 2) < 0)
+	    if (binyo_outstream_write(out, krypt_b64_separator, 2) < 0)
 		return 0;
 	    linepos = 0;
 	}
@@ -104,22 +104,22 @@ int_encode_final(uint8_t *bytes, int remainder)
 }
 
 static int
-int_write_final(krypt_outstream *out, uint8_t *bytes, int remainder, int crlf)
+int_write_final(binyo_outstream *out, uint8_t *bytes, int remainder, int crlf)
 {
     if (remainder) {
 	int_encode_final(bytes, remainder);
-	if (krypt_outstream_write(out, krypt_b64_out_buf, 4) < 0)
+	if (binyo_outstream_write(out, krypt_b64_out_buf, 4) < 0)
 	    return 0;
     }
     if (crlf) {
-	if (krypt_outstream_write(out, krypt_b64_separator, 2) < 0)
+	if (binyo_outstream_write(out, krypt_b64_separator, 2) < 0)
 	    return 0;
     }
     return 1;
 }
 
 int
-krypt_base64_buffer_encode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
+krypt_base64_buffer_encode_to(binyo_outstream *out, uint8_t *bytes, size_t off, size_t len, int cols)
 {
     int remainder;
 
@@ -140,7 +140,7 @@ ssize_t
 krypt_base64_encode(uint8_t *bytes, size_t len, int cols, uint8_t **out)
 {
     size_t retlen; 
-    krypt_outstream *outstream;
+    binyo_outstream *outstream;
 
     if (!bytes) return -1;
     if ( (len / 3 + 1) > (SIZE_MAX / 4) ) {
@@ -160,12 +160,12 @@ krypt_base64_encode(uint8_t *bytes, size_t len, int cols, uint8_t **out)
 	retlen += len / cols * 2;
     }
 
-    outstream = krypt_outstream_new_bytes_size(retlen);
+    outstream = binyo_outstream_new_bytes_size(retlen);
     if (!krypt_base64_buffer_encode_to(outstream, bytes, 0, len, cols)) {
-	krypt_outstream_free(outstream);
+	binyo_outstream_free(outstream);
 	return -1;
     }
-    retlen = krypt_outstream_bytes_get_bytes_free(outstream, out);
+    retlen = binyo_outstream_bytes_get_bytes_free(outstream, out);
     if (retlen > SSIZE_MAX) {
 	krypt_error_add("Return value too large");
 	xfree(*out);
@@ -184,10 +184,10 @@ int_decode_int(int n)
 }
 
 static int
-int_read_int(krypt_outstream *out, int n)
+int_read_int(binyo_outstream *out, int n)
 {
     int_decode_int(n);
-    if (krypt_outstream_write(out, krypt_b64_in_buf, 3) < 0)
+    if (binyo_outstream_write(out, krypt_b64_in_buf, 3) < 0)
 	return 0;
     return 1;
 }
@@ -212,17 +212,17 @@ int_decode_final(int n, int remainder)
 }
 
 static int
-int_read_final(krypt_outstream *out, int n, int remainder)
+int_read_final(binyo_outstream *out, int n, int remainder)
 {
     int_decode_final(n, remainder);
     if (remainder > 1) {
-	if (krypt_outstream_write(out, krypt_b64_in_buf, remainder - 1) < 0) return 0;
+	if (binyo_outstream_write(out, krypt_b64_in_buf, remainder - 1) < 0) return 0;
     }
     return 1;
 }
 
 int
-krypt_base64_buffer_decode_to(krypt_outstream *out, uint8_t *bytes, size_t off, size_t len)
+krypt_base64_buffer_decode_to(binyo_outstream *out, uint8_t *bytes, size_t off, size_t len)
 {
     size_t i;
     int n = 0;
@@ -258,19 +258,19 @@ ssize_t
 krypt_base64_decode(uint8_t *bytes, size_t len, uint8_t **out)
 {
     size_t retlen;
-    krypt_outstream *outstream;
+    binyo_outstream *outstream;
 
     if (!bytes) return -1;
 
     /* Approximate, will resize anyway */
     retlen = len / 4 * 3;
 
-    outstream = krypt_outstream_new_bytes_size(retlen);
+    outstream = binyo_outstream_new_bytes_size(retlen);
     if (!krypt_base64_buffer_decode_to(outstream, bytes, 0, len)) {
-	krypt_outstream_free(outstream);
+	binyo_outstream_free(outstream);
 	return -1;
     }
-    retlen = krypt_outstream_bytes_get_bytes_free(outstream, out);
+    retlen = binyo_outstream_bytes_get_bytes_free(outstream, out);
     if (retlen > SSIZE_MAX) {
 	xfree(*out);
 	*out = NULL;

@@ -87,16 +87,15 @@ void krypt_asn1_object_free(krypt_asn1_object *object);
 
 ID krypt_asn1_tag_class_for_int(int tag_class);
 int krypt_asn1_tag_class_for_id(ID tag_class);
-int krypt_asn1_next_header(krypt_instream *in, krypt_asn1_header **out);
-int krypt_asn1_skip_value(krypt_instream *in, krypt_asn1_header *last);
-ssize_t krypt_asn1_get_value(krypt_instream *in, krypt_asn1_header *last, uint8_t **out);
-krypt_instream *krypt_asn1_get_value_stream(krypt_instream *in, krypt_asn1_header *last, int values_only);
+int krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out);
+int krypt_asn1_skip_value(binyo_instream *in, krypt_asn1_header *last);
+ssize_t krypt_asn1_get_value(binyo_instream *in, krypt_asn1_header *last, uint8_t **out);
+binyo_instream *krypt_asn1_get_value_stream(binyo_instream *in, krypt_asn1_header *last, int values_only);
 
-int krypt_asn1_header_encode(krypt_outstream *out, krypt_asn1_header *header);
-int krypt_asn1_object_encode(krypt_outstream *out, krypt_asn1_object *object);
+int krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header);
+int krypt_asn1_object_encode(binyo_outstream *out, krypt_asn1_object *object);
 
 int krypt_asn1_cmp_set_of(uint8_t *s1, size_t len1, uint8_t *s2, size_t len2, int *result);
 
 #endif /* _KRYPT_ASN1_INTERNAL_H_ */
-
 

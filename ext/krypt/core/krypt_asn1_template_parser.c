@@ -47,7 +47,7 @@ static int int_decode_any(VALUE self, krypt_asn1_object *object, krypt_asn1_defi
 static int int_match_choice(VALUE self, struct krypt_asn1_template_match_ctx *ctx, krypt_asn1_definition *def);
 static int int_parse_choice(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def, int *dont_free);
 
-static int krypt_asn1_template_parse_stream(krypt_instream *in, VALUE klass, VALUE *out);
+static int krypt_asn1_template_parse_stream(binyo_instream *in, VALUE klass, VALUE *out);
 
 static struct krypt_asn1_template_parse_ctx krypt_template_primitive_ctx= {
     int_match_prim,
@@ -133,14 +133,14 @@ static int
 int_match_ctx_skip_header(struct krypt_asn1_template_match_ctx *ctx)
 {
     krypt_asn1_header *next;
-    krypt_instream *in = krypt_instream_new_bytes(ctx->object->bytes, ctx->object->bytes_len);
+    binyo_instream *in = binyo_instream_new_bytes(ctx->object->bytes, ctx->object->bytes_len);
     if (krypt_asn1_next_header(in, &next) != 1) {
-	krypt_instream_free(in);
+	binyo_instream_free(in);
 	return 0;
     }
     ctx->header = next;
     ctx->free_header = 1;
-    krypt_instream_free(in);
+    binyo_instream_free(in);
 
     return 1;
 }
@@ -215,13 +215,13 @@ static krypt_asn1_header *
 int_parse_explicit_header(krypt_asn1_object *object)
 {
     krypt_asn1_header *header;
-    krypt_instream *in = krypt_instream_new_bytes(object->bytes, object->bytes_len);
+    binyo_instream *in = binyo_instream_new_bytes(object->bytes, object->bytes_len);
 
     if (krypt_asn1_next_header(in, &header) != 1) {
 	krypt_error_add("Could not unpack explicitly tagged value");
 	return NULL;
     }
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     return header;
 }
 
@@ -252,7 +252,7 @@ int_unpack_explicit(VALUE tagging, krypt_asn1_object *object, uint8_t **pp, size
 }
 
 static int
-int_next_object(krypt_instream *in, krypt_asn1_object **out)
+int_next_object(binyo_instream *in, krypt_asn1_object **out)
 {
     krypt_asn1_header *next = NULL;
     krypt_asn1_object *next_object = NULL;
@@ -277,7 +277,7 @@ error:
 }
 
 static int
-int_parse_eoc(krypt_instream *in)
+int_parse_eoc(binyo_instream *in)
 {
     krypt_asn1_header *next;
     int result = krypt_asn1_next_header(in, &next);
@@ -293,12 +293,12 @@ int_parse_eoc(krypt_instream *in)
 }
     
 static int
-int_ensure_stream_is_consumed(krypt_instream *in)
+int_ensure_stream_is_consumed(binyo_instream *in)
 {
     uint8_t b;
     int result;
 
-    result = krypt_instream_read(in, &b, 1);
+    result = binyo_instream_read(in, &b, 1);
     if (result == 1) {
 	krypt_error_add("Data left that could not be parsed");
 	return 0;
@@ -509,7 +509,7 @@ int_rest_is_optional(VALUE self, VALUE layout, long index)
 static int
 int_parse_cons(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def, int *dont_free)
 {
-    krypt_instream *in;
+    binyo_instream *in;
     VALUE layout, vmin_size, tagging;
     long num_parsed = 0, layout_size, min_size, i;
     krypt_asn1_header *header = object->header;
@@ -530,7 +530,7 @@ int_parse_cons(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def
 	return 0;
     }
 
-    in = krypt_instream_new_bytes(p, len);
+    in = binyo_instream_new_bytes(p, len);
     if (int_next_object(in, &cur_object) != 1) goto error;
 
     for (i=0; i < layout_size; ++i) {
@@ -580,13 +580,13 @@ int_parse_cons(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def
     }
     if (!int_ensure_stream_is_consumed(in)) goto error;
 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (free_header) krypt_asn1_header_free(header);
     *dont_free = 0;
     return 1;
 
 error:
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (cur_object && !object_consumed) krypt_asn1_object_free(cur_object);
     if (free_header) krypt_asn1_header_free(header);
     return 0;
@@ -670,7 +670,7 @@ int_match_set_of(VALUE self, struct krypt_asn1_template_match_ctx *ctx, krypt_as
 }
 
 static int
-int_decode_cons_of_templates(krypt_instream *in, VALUE type, VALUE *out)
+int_decode_cons_of_templates(binyo_instream *in, VALUE type, VALUE *out)
 {
     VALUE cur;
     VALUE ary = rb_ary_new();
@@ -685,7 +685,7 @@ int_decode_cons_of_templates(krypt_instream *in, VALUE type, VALUE *out)
 }
 
 static int
-int_decode_cons_of_prim(krypt_instream *in, VALUE type, VALUE *out)
+int_decode_cons_of_prim(binyo_instream *in, VALUE type, VALUE *out)
 {
     VALUE cur;
     VALUE ary = rb_ary_new();
@@ -707,7 +707,7 @@ static int
 int_decode_cons_of(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def, VALUE *out)
 {
     ID name;
-    krypt_instream *in;
+    binyo_instream *in;
     VALUE type, tagging, val_ary, mod_p;
     uint8_t *p;
     size_t len;
@@ -724,7 +724,7 @@ int_decode_cons_of(VALUE self, krypt_asn1_object *object, krypt_asn1_definition 
 	return 0;
     }
 
-    in = krypt_instream_new_bytes(p, len);
+    in = binyo_instream_new_bytes(p, len);
 
     mod_p = rb_funcall(type, rb_intern("include?"), 1, mKryptASN1Template);
     if (RTEST(mod_p)) {
@@ -748,12 +748,12 @@ int_decode_cons_of(VALUE self, krypt_asn1_object *object, krypt_asn1_definition 
     if (!int_ensure_stream_is_consumed(in)) goto error;
 
     *out = val_ary;
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (free_header) krypt_asn1_header_free(header);
     return 1;
 
 error:
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (free_header) krypt_asn1_header_free(header);
     return 0;
 }
@@ -788,7 +788,7 @@ static int
 int_decode_any(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def, VALUE *out)
 {
     VALUE value, tagging;
-    krypt_instream *in, *seq_a, *seq_b, *seq_c;
+    binyo_instream *in, *seq_a, *seq_b, *seq_c;
     krypt_asn1_header *header = object->header;
     int free_header = 0;
     uint8_t *p;
@@ -798,20 +798,20 @@ int_decode_any(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def
 
     if(!(header = int_unpack_explicit(tagging, object, &p, &len, &free_header))) return 0;
 
-    seq_a = krypt_instream_new_bytes(header->tag_bytes, header->tag_len);
-    seq_b = krypt_instream_new_bytes(header->length_bytes, header->length_len);
-    seq_c = krypt_instream_new_bytes(p, len);
-    in = krypt_instream_new_seq_n(3, seq_a, seq_b, seq_c);
+    seq_a = binyo_instream_new_bytes(header->tag_bytes, header->tag_len);
+    seq_b = binyo_instream_new_bytes(header->length_bytes, header->length_len);
+    seq_c = binyo_instream_new_bytes(p, len);
+    in = binyo_instream_new_seq_n(3, seq_a, seq_b, seq_c);
     if (krypt_asn1_decode_stream(in, &value) != 1) goto error;
 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (free_header) krypt_asn1_header_free(header);
     *out = value;
     return 1;
 
 error: {
     ID name = int_determine_name(krypt_definition_get_name(def));
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     krypt_error_add("Error while decoding value %s", rb_id2name(name));
     if (free_header) krypt_asn1_header_free(header);
     return 0;
@@ -892,7 +892,7 @@ int_match_choice(VALUE self, struct krypt_asn1_template_match_ctx *ctx, krypt_as
 static krypt_asn1_object *
 int_skip_explicit_choice_header(VALUE tagging, krypt_asn1_object *object, int *new_object)
 {
-    krypt_instream *in;
+    binyo_instream *in;
     krypt_asn1_object *next_object = NULL;
 
     if (NIL_P(tagging)) {
@@ -900,14 +900,14 @@ int_skip_explicit_choice_header(VALUE tagging, krypt_asn1_object *object, int *n
 	return object;
     }
 
-    in = krypt_instream_new_bytes(object->bytes, object->bytes_len);
+    in = binyo_instream_new_bytes(object->bytes, object->bytes_len);
     if (!int_next_object(in, &next_object)) {
-	krypt_instream_free(in);
+	binyo_instream_free(in);
 	krypt_error_add("Error while trying to read next value");
 	return NULL;
     }
 
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     *new_object = 1;
     return next_object;
 }
@@ -1071,7 +1071,7 @@ krypt_asn1_template_set_cb_value(VALUE self, ID ivname, VALUE value)
 }
 
 static VALUE
-int_rb_template_new_initial(VALUE klass, krypt_instream *in, krypt_asn1_header *header)
+int_rb_template_new_initial(VALUE klass, binyo_instream *in, krypt_asn1_header *header)
 {
     ID codec;
     VALUE obj;
@@ -1107,7 +1107,7 @@ int_rb_template_new_initial(VALUE klass, krypt_instream *in, krypt_asn1_header *
 }
 
 static int
-krypt_asn1_template_parse_stream(krypt_instream *in, VALUE klass, VALUE *out)
+krypt_asn1_template_parse_stream(binyo_instream *in, VALUE klass, VALUE *out)
 {
     krypt_asn1_header *header;
     VALUE ret;
@@ -1130,10 +1130,10 @@ krypt_asn1_template_parse_der(VALUE klass, VALUE der)
 {
     VALUE ret = Qnil;
     int result;
-    krypt_instream *in = krypt_instream_new_value_der(der);
+    binyo_instream *in = krypt_instream_new_value_der(der);
 
     result = krypt_asn1_template_parse_stream(in, klass, &ret);
-    krypt_instream_free(in);
+    binyo_instream_free(in);
     if (result == 0 || result == -1)
 	krypt_error_raise(eKryptASN1Error, "Parsing the value failed"); 
     return ret;

@@ -103,7 +103,7 @@ krypt_asn1_template_new(krypt_asn1_object *object, VALUE definition, VALUE optio
 }
 
 krypt_asn1_template *
-krypt_asn1_template_new_from_stream(krypt_instream *in, krypt_asn1_header *header, VALUE definition, VALUE options)
+krypt_asn1_template_new_from_stream(binyo_instream *in, krypt_asn1_header *header, VALUE definition, VALUE options)
 {
     krypt_asn1_object *encoding;
     uint8_t *value = NULL;

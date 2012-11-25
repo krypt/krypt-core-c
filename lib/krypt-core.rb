@@ -4,7 +4,7 @@
 
 krypt-core API - C version
 
-Copyright (C) 2011
+Copyright (C) 2011-2012
 Hiroshi Nakamura <nahi@ruby-lang.org>
 Martin Bosslet <martin.bosslet@googlemail.com>
 All rights reserved.
@@ -15,5 +15,6 @@ See the file 'LICENSE' for further details.
 
 =end
 
+require 'binyo'
 require 'kryptcore.so'
 require 'krypt-provider-openssl'
