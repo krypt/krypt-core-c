@@ -36,11 +36,11 @@ typedef struct krypt_md_st {
 
 struct krypt_interface_md_st {
     int (*md_reset)(krypt_md *md);
-    int (*md_update)(krypt_md *md, unsigned char *data, size_t len);
-    int (*md_final)(krypt_md *md, unsigned char ** digest, size_t *len);
-    int (*md_digest)(krypt_md *md, unsigned char *data, size_t len, unsigned char **digest, size_t *digest_len);
-    int (*md_digest_length)(krypt_md *md, int *len);
-    int (*md_block_length)(krypt_md *md, int *block_len);
+    int (*md_update)(krypt_md *md, const void *data, size_t len);
+    int (*md_final)(krypt_md *md, uint8_t ** digest, size_t *len);
+    int (*md_digest)(krypt_md *md, const uint8_t *data, size_t len, uint8_t **digest, size_t *digest_len);
+    int (*md_digest_length)(krypt_md *md, size_t *len);
+    int (*md_block_length)(krypt_md *md, size_t *block_len);
     int (*md_name)(krypt_md *md, const char **name);
     void (*mark)(krypt_md *md);
     void (*free)(krypt_md *md);

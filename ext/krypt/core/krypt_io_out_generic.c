@@ -20,7 +20,7 @@ typedef struct krypt_outstream_io_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_outstream((out), (in), KRYPT_OUTSTREAM_TYPE_IO_GENERIC, krypt_outstream_io)
 
 static krypt_outstream_io* int_io_alloc(void);
-static ssize_t int_io_write(krypt_outstream *out, unsigned char *buf, size_t len);
+static ssize_t int_io_write(krypt_outstream *out, uint8_t *buf, size_t len);
 static int int_io_rb_write(krypt_outstream *out, VALUE vbuf, VALUE *ret);
 static void int_io_mark(krypt_outstream *out);
 static void int_io_free(krypt_outstream *out);
@@ -54,7 +54,7 @@ int_io_alloc(void)
 }
 
 static ssize_t
-int_io_write(krypt_outstream *outstream, unsigned char *buf, size_t len)
+int_io_write(krypt_outstream *outstream, uint8_t *buf, size_t len)
 {
     VALUE vbuf, ret;
     int w;

@@ -13,7 +13,7 @@
 #include "krypt-core.h"
 
 struct krypt_byte_ary_st {
-    unsigned char *p;
+    uint8_t *p;
     size_t len;
 };
 
@@ -26,7 +26,7 @@ typedef struct krypt_instream_bytes_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_BYTES, krypt_instream_bytes)
 
 static krypt_instream_bytes* int_bytes_alloc(void);
-static ssize_t int_bytes_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_bytes_read(krypt_instream *in, uint8_t *buf, size_t len);
 static ssize_t int_bytes_gets(krypt_instream *in, char *line, size_t len);
 static int int_bytes_seek(krypt_instream *in, off_t offset, int whence);
 static void int_bytes_free(krypt_instream *in);
@@ -42,7 +42,7 @@ static krypt_instream_interface krypt_interface_bytes = {
 };
 
 krypt_instream *
-krypt_instream_new_bytes(unsigned char *bytes, size_t len)
+krypt_instream_new_bytes(uint8_t *bytes, size_t len)
 {
     krypt_instream_bytes *in;
     struct krypt_byte_ary_st *byte_ary;
@@ -66,7 +66,7 @@ int_bytes_alloc(void)
 }
 
 static ssize_t
-int_bytes_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_bytes_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     struct krypt_byte_ary_st *src;
     size_t to_read;

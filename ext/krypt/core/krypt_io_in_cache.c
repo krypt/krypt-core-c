@@ -21,7 +21,7 @@ typedef struct krypt_instream_cache_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_CACHE, krypt_instream_cache)
 
 static krypt_instream_cache* int_cache_alloc(void);
-static ssize_t int_cache_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_cache_read(krypt_instream *in, uint8_t *buf, size_t len);
 static int int_cache_seek(krypt_instream *in, off_t offset, int whence);
 static void int_cache_mark(krypt_instream *in);
 static void int_cache_free(krypt_instream *in);
@@ -48,7 +48,7 @@ krypt_instream_new_cache(krypt_instream *original)
 }
 
 size_t
-krypt_instream_cache_get_bytes(krypt_instream *instream, unsigned char **out)
+krypt_instream_cache_get_bytes(krypt_instream *instream, uint8_t **out)
 {
     krypt_instream_cache *in;
     size_t ret;
@@ -70,7 +70,7 @@ int_cache_alloc(void)
 }
 
 static ssize_t
-int_cache_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_cache_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     ssize_t read;
     krypt_instream_cache *in;

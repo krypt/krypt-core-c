@@ -43,8 +43,8 @@ struct tm *krypt_gmtime_r(const time_t *tp, struct tm *result);
 #define gmtime_r(t, tm)				krypt_gmtime_r((t), (tm))
 #endif
 
-int krypt_asn1_encode_bignum(VALUE bignum, unsigned char **out, size_t *len);
-int krypt_asn1_decode_bignum(unsigned char *bytes, size_t len, VALUE *out);
+int krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *len);
+int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out);
 
 #endif /* KRYPT_MISSING_H */
 

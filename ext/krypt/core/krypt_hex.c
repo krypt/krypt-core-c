@@ -32,10 +32,10 @@ static const char krypt_hex_table_inv[] = {
 #define KRYPT_HEX_ENCODE 1
 
 static int
-int_hex_encode(unsigned char *bytes, size_t len, unsigned char *out)
+int_hex_encode(uint8_t *bytes, size_t len, uint8_t *out)
 {
     size_t i;
-    unsigned char b;
+    uint8_t b;
     size_t j;
    
     for (i=0; i < len; i++) {
@@ -48,15 +48,15 @@ int_hex_encode(unsigned char *bytes, size_t len, unsigned char *out)
 }
 
 static int
-int_hex_decode(unsigned char *bytes, size_t len, unsigned char *out)
+int_hex_decode(uint8_t *bytes, size_t len, uint8_t *out)
 {
     size_t i;
     char b;
-    unsigned char c, d;
+    uint8_t c, d;
 
     for (i=0; i < len / 2; i++) {
-	c = (unsigned char) bytes[i*2];
-	d = (unsigned char) bytes[i*2+1];
+	c = (uint8_t) bytes[i*2];
+	d = (uint8_t) bytes[i*2+1];
 	if (c > KRYPT_HEX_INV_MAX || d > KRYPT_HEX_INV_MAX) {
 	    krypt_error_add("Illegal hex character detected: %x or %x", c, d);
 	    return 0;
@@ -89,10 +89,10 @@ do {									\
 } while (0)
 
 ssize_t
-krypt_hex_encode(unsigned char *bytes, size_t len, unsigned char **out)
+krypt_hex_encode(uint8_t *bytes, size_t len, uint8_t **out)
 {
     ssize_t ret;
-    unsigned char *retval;
+    uint8_t *retval;
     int tmp = 0;
 
     int_hex_encode_tests(bytes, len, tmp);
@@ -100,7 +100,7 @@ krypt_hex_encode(unsigned char *bytes, size_t len, unsigned char **out)
 	return -1;
 
     ret = 2 * len;
-    retval = ALLOC_N(unsigned char, ret);
+    retval = ALLOC_N(uint8_t, ret);
     int_hex_encode(bytes, len, retval);
     *out = retval;
     return ret;
@@ -122,10 +122,10 @@ do {									\
 } while (0)
 
 ssize_t
-krypt_hex_decode(unsigned char *bytes, size_t len, unsigned char **out)
+krypt_hex_decode(uint8_t *bytes, size_t len, uint8_t **out)
 {
     ssize_t ret;
-    unsigned char *retval;
+    uint8_t *retval;
     int tmp = 0;
     
     int_hex_decode_tests(bytes, len, tmp);
@@ -133,7 +133,7 @@ krypt_hex_decode(unsigned char *bytes, size_t len, unsigned char **out)
 	return -1;
 
     ret = len / 2;
-    retval = ALLOC_N(unsigned char, ret);
+    retval = ALLOC_N(uint8_t, ret);
     if (!int_hex_decode(bytes, len, retval)) {
 	xfree(retval);
 	return -1;
@@ -147,7 +147,7 @@ krypt_hex_decode(unsigned char *bytes, size_t len, unsigned char **out)
 #define int_hex_process(bytes, len, mode, ret)					\
 do {										\
     ssize_t result_len;								\
-    unsigned char *result;							\
+    uint8_t *result;								\
     int tmp = 0;								\
     if (!(bytes))								\
         krypt_error_raise(eKryptHexError, "Bytes null");			\
@@ -156,14 +156,14 @@ do {										\
 	if (tmp == -1)								\
 	    krypt_error_raise(eKryptHexError, "Decoding the value failed");	\
 	result_len = (len) / 2;							\
-    	result = ALLOCA_N(unsigned char, result_len);				\
+    	result = ALLOCA_N(uint8_t, result_len);					\
 	tmp = int_hex_decode((bytes), (len), result);				\
     } else if ((mode) == KRYPT_HEX_ENCODE) {					\
 	int_hex_encode_tests((bytes), (len), tmp);				\
 	if (tmp == -1)								\
 	    krypt_error_raise(eKryptHexError, "Encoding the value failed");	\
 	result_len = (len) * 2;							\
-	result = ALLOCA_N(unsigned char, result_len);				\
+	result = ALLOCA_N(uint8_t, result_len);					\
 	tmp = int_hex_encode((bytes), (len), result);				\
     } else {									\
 	krypt_error_raise(rb_eRuntimeError, "Internal error");			\
@@ -184,12 +184,12 @@ static VALUE
 krypt_hex_module_decode(VALUE self, VALUE data)
 {
     VALUE ret;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
 
     StringValue(data);
     len = (size_t) RSTRING_LEN((data));
-    bytes = (unsigned char *) RSTRING_PTR((data));
+    bytes = (uint8_t *) RSTRING_PTR((data));
     int_hex_process(bytes, len, KRYPT_HEX_DECODE, ret);
     return ret;
 }
@@ -205,12 +205,12 @@ static VALUE
 krypt_hex_module_encode(VALUE self, VALUE data)
 {
     VALUE ret;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
 
     StringValue(data);
     len = (size_t) RSTRING_LEN((data));
-    bytes = (unsigned char *) RSTRING_PTR((data));
+    bytes = (uint8_t *) RSTRING_PTR((data));
     int_hex_process(bytes, len, KRYPT_HEX_ENCODE, ret);
     rb_enc_associate(ret, rb_ascii8bit_encoding());
     return ret;

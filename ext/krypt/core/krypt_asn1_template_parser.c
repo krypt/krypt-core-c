@@ -226,7 +226,7 @@ int_parse_explicit_header(krypt_asn1_object *object)
 }
 
 static krypt_asn1_header *
-int_unpack_explicit(VALUE tagging, krypt_asn1_object *object, unsigned char **pp, size_t *len, int *free_header)
+int_unpack_explicit(VALUE tagging, krypt_asn1_object *object, uint8_t **pp, size_t *len, int *free_header)
 {
     
     if (NIL_P(tagging) || SYM2ID(tagging) != sKrypt_TC_EXPLICIT) {
@@ -258,7 +258,7 @@ int_next_object(krypt_instream *in, krypt_asn1_object **out)
     krypt_asn1_object *next_object = NULL;
     int result;
     ssize_t value_len;
-    unsigned char *value;
+    uint8_t *value;
 
     result = krypt_asn1_next_header(in, &next);
     if (result == 0) return 0;
@@ -295,7 +295,7 @@ int_parse_eoc(krypt_instream *in)
 static int
 int_ensure_stream_is_consumed(krypt_instream *in)
 {
-    unsigned char b;
+    uint8_t b;
     int result;
 
     result = krypt_instream_read(in, &b, 1);
@@ -418,7 +418,7 @@ int_decode_prim(VALUE tvalue, krypt_asn1_object *object, krypt_asn1_definition *
     VALUE value, vtype, tagging;
     krypt_asn1_header *header = object->header;
     int free_header = 0, default_tag;
-    unsigned char *p;
+    uint8_t *p;
     size_t len;
 
     if (header->is_infinite)
@@ -515,7 +515,7 @@ int_parse_cons(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def
     krypt_asn1_header *header = object->header;
     krypt_asn1_object *cur_object = NULL;
     int object_consumed = 0, free_header = 0;
-    unsigned char *p;
+    uint8_t *p;
     size_t len;
 
     get_or_raise(layout, krypt_definition_get_layout(def), "'layout' missing in ASN.1 definition");
@@ -709,7 +709,7 @@ int_decode_cons_of(VALUE self, krypt_asn1_object *object, krypt_asn1_definition 
     ID name;
     krypt_instream *in;
     VALUE type, tagging, val_ary, mod_p;
-    unsigned char *p;
+    uint8_t *p;
     size_t len;
     int free_header = 0;
     krypt_asn1_header *header = object->header;
@@ -791,7 +791,7 @@ int_decode_any(VALUE self, krypt_asn1_object *object, krypt_asn1_definition *def
     krypt_instream *in, *seq_a, *seq_b, *seq_c;
     krypt_asn1_header *header = object->header;
     int free_header = 0;
-    unsigned char *p;
+    uint8_t *p;
     size_t len;
 
     tagging = krypt_definition_get_tagging(def);

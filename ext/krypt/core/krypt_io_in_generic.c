@@ -20,7 +20,7 @@ typedef struct krypt_instream_io_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_instream((out), (in), KRYPT_INSTREAM_TYPE_IO_GENERIC, krypt_instream_io)
 
 static krypt_instream_io* int_io_alloc(void);
-static ssize_t int_io_read(krypt_instream *in, unsigned char *buf, size_t len);
+static ssize_t int_io_read(krypt_instream *in, uint8_t *buf, size_t len);
 static int int_io_rb_read(krypt_instream *in, VALUE vlen, VALUE vbuf, VALUE *out);
 static int int_io_seek(krypt_instream *in, off_t offset, int whence);
 static void int_io_mark(krypt_instream *in);
@@ -79,7 +79,7 @@ int_io_rb_read_impl(krypt_instream_io *in, VALUE vlen, VALUE vbuf, VALUE *out)
 }
 
 static ssize_t
-int_io_read(krypt_instream *instream, unsigned char *buf, size_t len)
+int_io_read(krypt_instream *instream, uint8_t *buf, size_t len)
 {
     VALUE read, vlen, vbuf;
     krypt_instream_io *in;

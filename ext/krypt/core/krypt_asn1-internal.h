@@ -54,20 +54,20 @@ typedef struct krypt_asn1_header_st {
     int is_constructed;
     int is_infinite;
     size_t length;
-    unsigned char *tag_bytes;
+    uint8_t *tag_bytes;
     size_t tag_len;
-    unsigned char *length_bytes;
+    uint8_t *length_bytes;
     size_t length_len;
 } krypt_asn1_header;
 
 typedef struct krypt_asn1_object_st {
     krypt_asn1_header *header;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t bytes_len;
 } krypt_asn1_object;
 
-typedef int (*krypt_asn1_decoder)(VALUE self, unsigned char *bytes, size_t len, VALUE *out);
-typedef int (*krypt_asn1_encoder)(VALUE self, VALUE value, unsigned char **out, size_t *len);
+typedef int (*krypt_asn1_decoder)(VALUE self, uint8_t *bytes, size_t len, VALUE *out);
+typedef int (*krypt_asn1_encoder)(VALUE self, VALUE value, uint8_t **out, size_t *len);
 typedef int (*krypt_asn1_validator)(VALUE, VALUE);
 
 typedef struct krypt_asn1_codec_st {
@@ -82,20 +82,20 @@ extern krypt_asn1_codec krypt_asn1_codecs[];
 krypt_asn1_header *krypt_asn1_header_new(void);
 void krypt_asn1_header_free(krypt_asn1_header *header);
 krypt_asn1_object *krypt_asn1_object_new(krypt_asn1_header *header);
-krypt_asn1_object *krypt_asn1_object_new_value(krypt_asn1_header *header, unsigned char *value, size_t len);
+krypt_asn1_object *krypt_asn1_object_new_value(krypt_asn1_header *header, uint8_t *value, size_t len);
 void krypt_asn1_object_free(krypt_asn1_object *object);
 
 ID krypt_asn1_tag_class_for_int(int tag_class);
 int krypt_asn1_tag_class_for_id(ID tag_class);
 int krypt_asn1_next_header(krypt_instream *in, krypt_asn1_header **out);
 int krypt_asn1_skip_value(krypt_instream *in, krypt_asn1_header *last);
-ssize_t krypt_asn1_get_value(krypt_instream *in, krypt_asn1_header *last, unsigned char **out);
+ssize_t krypt_asn1_get_value(krypt_instream *in, krypt_asn1_header *last, uint8_t **out);
 krypt_instream *krypt_asn1_get_value_stream(krypt_instream *in, krypt_asn1_header *last, int values_only);
 
 int krypt_asn1_header_encode(krypt_outstream *out, krypt_asn1_header *header);
 int krypt_asn1_object_encode(krypt_outstream *out, krypt_asn1_object *object);
 
-int krypt_asn1_cmp_set_of(unsigned char *s1, size_t len1, unsigned char *s2, size_t len2, int *result);
+int krypt_asn1_cmp_set_of(uint8_t *s1, size_t len1, uint8_t *s2, size_t len2, int *result);
 
 #endif /* _KRYPT_ASN1_INTERNAL_H_ */
 

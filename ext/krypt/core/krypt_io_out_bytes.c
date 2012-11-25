@@ -20,7 +20,7 @@ typedef struct krypt_outstream_bytes_st {
 #define int_safe_cast(out, in)		krypt_safe_cast_outstream((out), (in), KRYPT_OUTSTREAM_TYPE_BYTES, krypt_outstream_bytes)
 
 static krypt_outstream_bytes* int_bytes_alloc(void);
-static ssize_t int_bytes_write(krypt_outstream *out, unsigned char *buf, size_t len);
+static ssize_t int_bytes_write(krypt_outstream *out, uint8_t *buf, size_t len);
 static void int_bytes_free(krypt_outstream *out);
 
 static krypt_outstream_interface krypt_interface_bytes = {
@@ -52,7 +52,7 @@ krypt_outstream_new_bytes_size(size_t size)
 }
 
 krypt_outstream *
-krypt_outstream_new_bytes_prealloc(unsigned char *b, size_t len)
+krypt_outstream_new_bytes_prealloc(uint8_t *b, size_t len)
 {
     krypt_outstream_bytes *out;
 
@@ -62,7 +62,7 @@ krypt_outstream_new_bytes_prealloc(unsigned char *b, size_t len)
 }
 
 size_t
-krypt_outstream_bytes_get_bytes_free(krypt_outstream *outstream, unsigned char **bytes)
+krypt_outstream_bytes_get_bytes_free(krypt_outstream *outstream, uint8_t **bytes)
 {
     krypt_outstream_bytes *out;
     size_t len;
@@ -84,7 +84,7 @@ int_bytes_alloc(void)
 }
 
 static ssize_t
-int_bytes_write(krypt_outstream *outstream, unsigned char *buf, size_t len)
+int_bytes_write(krypt_outstream *outstream, uint8_t *buf, size_t len)
 {
     krypt_outstream_bytes *out;
 

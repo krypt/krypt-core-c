@@ -13,8 +13,8 @@
 #ifndef _KRYPT_HEX_INTERNAL_H
 #define _KRYPT_HEX_INTERNAL_H_
 
-ssize_t krypt_hex_encode(unsigned char *bytes, size_t len, unsigned char **out);
-ssize_t krypt_hex_decode(unsigned char *bytes, size_t len, unsigned char **out);
+ssize_t krypt_hex_encode(uint8_t *bytes, size_t len, uint8_t **out);
+ssize_t krypt_hex_decode(uint8_t *bytes, size_t len, uint8_t **out);
 
 #endif /* _KRYPT_HEX_INTERNAL_H_ */
 

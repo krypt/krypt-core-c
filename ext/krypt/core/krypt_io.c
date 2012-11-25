@@ -73,7 +73,7 @@ krypt_io_adapter_new_instream_with_buffer(krypt_instream *in, size_t bufsize)
     VALUE obj;
     krypt_io_adapter *adapter = krypt_io_adapter_alloc();
     adapter->in = in;
-    adapter->buf = ALLOC_N(unsigned char, bufsize);
+    adapter->buf = ALLOC_N(uint8_t, bufsize);
     krypt_io_adapter_set(cKryptASN1Instream, obj, adapter);
     return obj;
 }
@@ -84,7 +84,7 @@ krypt_io_adapter_new_outstream_with_buffer(krypt_outstream *out, size_t bufsize)
     VALUE obj;
     krypt_io_adapter *adapter = krypt_io_adapter_alloc();
     adapter->out = out;
-    adapter->buf = ALLOC_N(unsigned char, bufsize);
+    adapter->buf = ALLOC_N(uint8_t, bufsize);
     krypt_io_adapter_set(cKryptASN1Instream, obj, adapter);
     return obj;
 }
@@ -112,10 +112,10 @@ krypt_add_io_error(void)
 static int
 int_read_all(krypt_instream *in, VALUE vbuf, VALUE *out)
 {
-    unsigned char *buf;
+    uint8_t *buf;
     ssize_t r;
 
-    buf = ALLOC_N(unsigned char, KRYPT_IO_BUF_SIZE);
+    buf = ALLOC_N(uint8_t, KRYPT_IO_BUF_SIZE);
 
     while ((r = krypt_instream_read(in, buf, KRYPT_IO_BUF_SIZE)) >= 0) {
 	rb_str_buf_cat(vbuf, (const char *) buf, r);
@@ -134,7 +134,7 @@ int_rb_read_generic(krypt_instream *in, VALUE vlen, VALUE vbuf, VALUE *out)
     long len;
     size_t tlen;
     ssize_t r;
-    unsigned char *buf;
+    uint8_t *buf;
 
     if (NIL_P(vbuf)) {
 	vbuf = rb_str_new2("");
@@ -161,7 +161,7 @@ int_rb_read_generic(krypt_instream *in, VALUE vlen, VALUE vbuf, VALUE *out)
 	return 1;
     }
 
-    buf = ALLOC_N(unsigned char, tlen);
+    buf = ALLOC_N(uint8_t, tlen);
     r = krypt_instream_read(in, buf, tlen);
 
     if (r == 0) {
@@ -197,7 +197,7 @@ krypt_instream_rb_read(krypt_instream *in, VALUE vlen, VALUE vbuf, VALUE *out)
 }
 
 ssize_t 
-krypt_instream_read(krypt_instream *in, unsigned char *buf, size_t len)
+krypt_instream_read(krypt_instream *in, uint8_t *buf, size_t len)
 {
     int_check_stream_has(in, read);
 
@@ -218,7 +218,7 @@ int_gets_generic(krypt_instream *in, char *line, size_t len)
     if (!line) return -2;
 
     while (p < end) {
-	if ((r = in->methods->read(in, (unsigned char *) p, 1)) < 0)
+	if ((r = in->methods->read(in, (uint8_t *) p, 1)) < 0)
 	    break;
 	if (r == 1) {
 	    if (*p == '\n')
@@ -287,7 +287,7 @@ int_instream_common_new(VALUE value)
     type = TYPE(value);
 
     if (type == T_STRING) {
-	return krypt_instream_new_bytes((unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
+	return krypt_instream_new_bytes((uint8_t *)RSTRING_PTR(value), RSTRING_LEN(value));
     }
     else {
 	if (type == T_FILE) {
@@ -314,7 +314,7 @@ krypt_instream_new_value_der(VALUE value)
     if (!(in = int_instream_common_new(value))) {
 	value = krypt_to_der_if_possible(value);
 	StringValue(value);
-	in = krypt_instream_new_bytes((unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
+	in = krypt_instream_new_bytes((uint8_t *)RSTRING_PTR(value), RSTRING_LEN(value));
     }
 
     return in;
@@ -328,7 +328,7 @@ krypt_instream_new_value_pem(VALUE value)
     if (!(in = int_instream_common_new(value))) {
 	value = krypt_to_pem_if_possible(value);
 	StringValue(value);
-	in = krypt_instream_new_bytes((unsigned char *)RSTRING_PTR(value), RSTRING_LEN(value));
+	in = krypt_instream_new_bytes((uint8_t *)RSTRING_PTR(value), RSTRING_LEN(value));
     }
 
     return in;
@@ -338,7 +338,7 @@ krypt_instream_new_value_pem(VALUE value)
 /* outstream */
 
 ssize_t 
-krypt_outstream_write(krypt_outstream *out, unsigned char *buf, size_t len)
+krypt_outstream_write(krypt_outstream *out, uint8_t *buf, size_t len)
 {
     int_check_stream_has(out, write);
     if (len > SSIZE_MAX) {
@@ -358,7 +358,7 @@ krypt_outstream_rb_write(krypt_outstream *out, VALUE vbuf, VALUE *ret)
     }
     else {
 	ssize_t w;
-	w = krypt_outstream_write(out, (unsigned char *) RSTRING_PTR(vbuf), RSTRING_LEN(vbuf));
+	w = krypt_outstream_write(out, (uint8_t *) RSTRING_PTR(vbuf), RSTRING_LEN(vbuf));
 	if (w < 0) {
 	    krypt_error_add("Error while writing to stream");
 	    return 0;

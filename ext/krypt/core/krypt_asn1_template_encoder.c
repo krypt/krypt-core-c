@@ -24,12 +24,12 @@ int
 int_template_encode_cached(krypt_asn1_object *object, VALUE *value)
 {
     krypt_outstream *out;
-    unsigned char *bytes;
+    uint8_t *bytes;
     size_t len;
     int ret;
 
     len = object->header->tag_len + object->header->length_len + object->bytes_len;
-    bytes = ALLOCA_N(unsigned char, len);
+    bytes = ALLOCA_N(uint8_t, len);
     out = krypt_outstream_new_bytes_prealloc(bytes, len);
 
     if ((ret = krypt_asn1_object_encode(out, object))) {

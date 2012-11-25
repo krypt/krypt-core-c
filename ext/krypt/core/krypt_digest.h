@@ -22,9 +22,9 @@ krypt_md *krypt_md_new(krypt_provider *provider, const char *name_or_oid);
 krypt_md *krypt_md_oid_new(krypt_provider *provider, const char *oid);
 krypt_md *krypt_md_name_new(krypt_provider *provider, const char *name);
 
-int krypt_md_update(krypt_md *md, unsigned char *data, size_t len);
-int krypt_md_final(krypt_md *md, unsigned char **digest, size_t *len);
-int krypt_md_digest(krypt_md *md, unsigned char *data, size_t len, unsigned char **digest, size_t *digest_len);
+int krypt_md_update(krypt_md *md, const void *data, size_t len);
+int krypt_md_final(krypt_md *md, uint8_t **digest, size_t *len);
+int krypt_md_digest(krypt_md *md, const uint8_t *data, size_t len, uint8_t **digest, size_t *digest_len);
 void krypt_md_mark(krypt_md *md);
 void krypt_md_free(krypt_md *md);
 
