@@ -747,6 +747,8 @@ static int
 int_parse_utc_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
+    char *cstr;
+    int i;
     struct tm tm = { 0 };
 
     if (len != 13) {
@@ -754,7 +756,14 @@ int_parse_utc_time(uint8_t *bytes, size_t len, VALUE *out)
 	return 0;
     }
 
-    if (sscanf((const char *) bytes,
+    /* make sure input to sscanf is a zero-terminated string */
+    cstr = ALLOCA_N(char, 14);
+    for (i=0; i < 14; i++) {
+	cstr[i] = (char) bytes[i];
+    }
+    cstr[13] = '\0';
+
+    if (sscanf((const char *) cstr,
 		"%2d%2d%2d%2d%2d%2dZ",
 		&tm.tm_year,
 		&tm.tm_mon,
@@ -817,6 +826,8 @@ static int
 int_parse_generalized_time(uint8_t *bytes, size_t len, VALUE *out)
 {
     VALUE argv[6];
+    char *cstr;
+    int i;
     struct tm tm = { 0 };
 
     if (len != 15) {
@@ -824,7 +835,14 @@ int_parse_generalized_time(uint8_t *bytes, size_t len, VALUE *out)
 	return 0;
     }
 
-    if (sscanf((const char *)bytes,
+    /* make sure input to sscanf is a zero-terminated string */
+    cstr = ALLOCA_N(char, 16);
+    for (i=0; i < 16; i++) {
+	cstr[i] = (char) bytes[i];
+    }
+    cstr[15] = '\0';
+
+    if (sscanf((const char *)cstr,
 		"%4d%2d%2d%2d%2d%2dZ",
 		&tm.tm_year,
 		&tm.tm_mon,

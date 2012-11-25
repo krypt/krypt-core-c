@@ -1392,93 +1392,71 @@
    Memcheck:Leak
    fun:malloc
    fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_obj_alloc
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:Init_prelude
+   ...
 }
 
 {
    ruby002
    Memcheck:Leak
-   fun:malloc
+   fun:realloc
+   fun:vm_xrealloc
    ...
-   fun:rb_require_safe
-   ...
-   fun:rb_iseq_eval
-   fun:process_options
-   fun:ruby_process_options
 }
 
 {
    ruby003
    Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:st_init_strtable
-   fun:load_lock
-   fun:rb_require_safe
-   fun:rb_protect
-   fun:load_encoding
-   fun:rb_enc_find_index
-   fun:process_options
-   fun:ruby_process_options
-   fun:ruby_options
-   fun:main
+   fun:calloc
+   fun:vm_xcalloc
+   ...
+}
+
+{
+   ruby003-1
+   Memcheck:Leak
+   fun:calloc
+   fun:ruby_xcalloc
+   ...
 }
 
 {
    ruby004
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:rb_barrier_new
-   fun:load_lock
-   fun:rb_require_safe
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval_main
-   fun:ruby_exec_internal
-   fun:ruby_run_node
+   Memcheck:Addr4
+   fun:glob_helper
+   ...
 }
-
 
 {
    ruby005
    Memcheck:Leak
    fun:malloc
-   fun:vm_xmalloc
-   fun:st_init_numtable
-   fun:rb_class_boot
-   fun:Init_VM
-   fun:rb_call_inits
-   fun:ruby_init
-   fun:main
+   fun:onig_new
+   ...
+}
+
+{
+   ruby005-1
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:onig_compile
+   ...
 }
 
 {
    ruby006
    Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:rb_barrier_new
-   fun:load_lock
-   fun:rb_require_safe
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:rb_load_internal
-   fun:rb_require_safe
+   fun:realloc
+   fun:add_compile_string
+   ...
+}
+
+{
+   ruby006-1
+   Memcheck:Leak
+   fun:realloc
+   fun:compile_tree
+   ...
 }
 
 {
@@ -1486,218 +1464,14 @@
    Memcheck:Leak
    fun:calloc
    fun:ruby_init_setproctitle
-   fun:ruby_process_options
-   fun:ruby_options
-   fun:main
+   ...
 }
 
 {
    ruby008
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:rb_method_entry_make
-   fun:rb_add_method
-   fun:vm_define_method.isra.48
-   fun:m_core_define_method
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:rb_load_internal
-   fun:rb_require_safe
-}
-
-{
-   ruby009
    Memcheck:Addr4
-   fun:glob_helper
-   fun:ruby_glob0
-   fun:rb_push_glob
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:invoke_block_from_c
-   fun:rb_yield
-   fun:rb_ary_reverse_each
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
+   fun:rb_vm_invoke_proc
+   ...
+   fun:main
 }
-
-{
-   ruby010
-   Memcheck:Addr4
-   fun:glob_helper
-   fun:glob_helper
-   fun:ruby_glob0
-   fun:ruby_brace_expand.constprop.9
-   fun:rb_push_glob
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:eval_string_with_cref
-   fun:specific_eval.part.47
-   fun:vm_call_method
-   fun:vm_exec_core
-}
-
-{
-   ruby011
-   Memcheck:Addr4
-   fun:glob_helper
-   fun:ruby_glob0
-   fun:ruby_brace_expand.constprop.9
-   fun:rb_push_glob
-   fun:dir_s_glob
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:vm_call0
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-}
-
-{
-   ruby012
-   Memcheck:Addr4
-   fun:glob_helper
-   fun:ruby_glob0
-   fun:rb_push_glob
-   fun:dir_s_glob
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:vm_call0
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-}
-
-{
-   ruby013
-   Memcheck:Addr4
-   fun:glob_helper
-   fun:ruby_glob0
-   fun:rb_push_glob
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:invoke_block_from_c
-   fun:rb_yield
-   fun:rb_ary_each
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-}
-
-{
-   ruby014
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_obj_alloc
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:rb_load_internal
-}
-
-{
-   ruby015
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_obj_alloc
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:invoke_block_from_c
-   fun:yield_under
-}
-
-{
-   ruby016
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:io_binwrite
-   fun:io_write
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_io_puts
-   fun:vm_call0
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-}
-
-{
-   ruby017
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_obj_alloc
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:rb_load_internal
-}
-
-{
-   ruby018
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:rb_barrier_new
-   fun:load_lock
-   fun:rb_require_safe
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:rb_iseq_eval
-   fun:rb_load_internal
-   fun:rb_f_load
-}
-
-{
-   ruby019
-   Memcheck:Leak
-   fun:malloc
-   fun:vm_xmalloc
-   fun:mutex_alloc
-   fun:vm_call0
-   fun:rb_funcall
-   fun:rb_obj_alloc
-   fun:rb_class_new_instance
-   fun:vm_call_method
-   fun:vm_exec_core
-   fun:vm_exec
-   fun:vm_call0
-   fun:rb_class_new_instance
-}
-
-
-
-
-
-
 
