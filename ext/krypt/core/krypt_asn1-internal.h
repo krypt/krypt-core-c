@@ -89,7 +89,7 @@ ID krypt_asn1_tag_class_for_int(int tag_class);
 int krypt_asn1_tag_class_for_id(ID tag_class);
 int krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out);
 int krypt_asn1_skip_value(binyo_instream *in, krypt_asn1_header *last);
-ssize_t krypt_asn1_get_value(binyo_instream *in, krypt_asn1_header *last, uint8_t **out);
+int krypt_asn1_get_value(binyo_instream *in, krypt_asn1_header *last, uint8_t **out, size_t *outlen);
 binyo_instream *krypt_asn1_get_value_stream(binyo_instream *in, krypt_asn1_header *last, int values_only);
 
 int krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header);

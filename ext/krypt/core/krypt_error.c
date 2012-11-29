@@ -131,6 +131,7 @@ int_error_msg_create(char *buf, int len, const char *format, va_list args)
     }
 
     l += int_add_binyo_errors(buf + l, len);
+    binyo_error_clear();
 
     return l;
 }

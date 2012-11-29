@@ -17,7 +17,7 @@
 int
 int_template_encode_non_cached(VALUE self, krypt_asn1_template *template, VALUE *out)
 {
-    return 0;
+    return KRYPT_ERR;
 }
 
 int
@@ -32,12 +32,11 @@ int_template_encode_cached(krypt_asn1_object *object, VALUE *value)
     bytes = ALLOCA_N(uint8_t, len);
     out = binyo_outstream_new_bytes_prealloc(bytes, len);
 
-    if ((ret = krypt_asn1_object_encode(out, object))) {
-	*value = rb_str_new((const char *) bytes, len);
-    }
-
+    ret = krypt_asn1_object_encode(out, object);
     binyo_outstream_free(out);
-    return ret;
+    if (ret == KRYPT_ERR) return KRYPT_ERR;
+    *value = rb_str_new((const char *) bytes, len);
+    return KRYPT_OK;
 }
 
 int

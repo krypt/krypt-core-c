@@ -81,7 +81,7 @@ krypt_instream_adapter_read(int argc, VALUE *argv, VALUE self)
 
     int_krypt_instream_adapter_get(self, adapter);
 
-    if (!binyo_instream_rb_read(adapter->in, vlen, vbuf, &ret))
+    if (binyo_instream_rb_read(adapter->in, vlen, vbuf, &ret) == BINYO_ERR)
 	rb_raise(eKryptError, "Error reading stream");
     return ret;
 }
@@ -124,7 +124,8 @@ krypt_instream_adapter_seek(int argc, VALUE *argv, VALUE self)
 
     int_krypt_instream_adapter_get(self, adapter);
     whence = int_whence_for(vwhence);
-    binyo_instream_seek(adapter->in, NUM2INT(n), whence);
+    if (binyo_instream_seek(adapter->in, NUM2INT(n), whence) == BINYO_ERR)
+        rb_raise(eKryptASN1ParseError, "Seek failed");
 
     return INT2FIX(0); /* same as rb_io_seek */
 }

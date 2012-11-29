@@ -78,9 +78,13 @@ int_read_new_header(krypt_instream_chunked *in)
     krypt_asn1_header *next;
 
     ret = krypt_asn1_next_header(in->inner, &next);
-    if (ret == 0) {
+    if (ret == KRYPT_ASN1_EOF) {
 	krypt_error_add("Premature end of value detected");
 	return BINYO_ERR;
+    }
+    if (ret == KRYPT_ERR) {
+        krypt_error_add("An error occured while reading the ASN.1 header");
+        return BINYO_ERR;
     }
 
     if (in->cur_header)
@@ -125,10 +129,9 @@ int_read_value(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 	in->cur_value_stream = krypt_asn1_get_value_stream(in->inner, in->cur_header, in->values_only);
 
     read = binyo_instream_read(in->cur_value_stream, buf, len);
-    if (read == BINYO_IO_READ_ERR)
-	return BINYO_IO_READ_ERR;
+    if (read == BINYO_ERR) return BINYO_ERR;
 
-    if (read == BINYO_IO_READ_EOF) {
+    if (read == BINYO_IO_EOF) {
 	if (in->state != DONE)
 	    in->state = NEW_HEADER;
 	binyo_instream_free(in->cur_value_stream);
@@ -165,7 +168,7 @@ do {						\
       total += read;				\
       if (total == len || in->state == DONE)	\
           return (ssize_t) total;		\
-      if (total > len) return BINYO_IO_READ_ERR;\
+      if (total > len) return BINYO_ERR;	\
       buf += read;				\
    }						\
 } while (0)
@@ -173,7 +176,7 @@ do {						\
     switch (in->state) {
 	case NEW_HEADER:
 	    if (!int_read_new_header(in))
-	       return BINYO_IO_READ_ERR;
+	       return BINYO_ERR;
     	    /* fallthrough */
 	case PROCESS_TAG: 
 	    read = int_read_header_bytes(in,
@@ -196,13 +199,13 @@ do {						\
 	    /* fallthrough */
 	case PROCESS_VALUE:
 	    read = int_read_value(in, buf, len);
-	    if (read == BINYO_IO_READ_ERR) return BINYO_IO_READ_ERR;
+	    if (read == BINYO_ERR) return BINYO_ERR;
 	    total += read;
 	    buf += read;
 	    return (ssize_t) total;
 	default:
 	    krypt_error_add("Internal error");
-	    return BINYO_IO_READ_ERR; /* dummy */
+	    return BINYO_ERR; /* dummy */
     }
 }
 
@@ -214,10 +217,10 @@ int_read(krypt_instream_chunked *in, uint8_t *buf, size_t len)
 
     while (total != len && in->state != DONE) {
 	read = int_read_single_element(in, buf, len);
-	if (read == BINYO_IO_READ_ERR) return BINYO_IO_READ_ERR;
+	if (read == BINYO_ERR) return BINYO_ERR;
 	if (total > (size_t) (SSIZE_MAX - read)) {
 	    krypt_error_add("Stream too large");
-	    return BINYO_IO_READ_ERR;
+	    return BINYO_ERR;
 	}
 	total += read;
 	buf += read;
@@ -232,9 +235,9 @@ int_chunked_read(binyo_instream *instream, uint8_t *buf, size_t len)
     
     int_safe_cast(in, instream);
     
-    if (!buf) return BINYO_IO_READ_ERR;
+    if (!buf) return BINYO_ERR;
     if (in->state == DONE)
-	return BINYO_IO_READ_EOF;
+	return BINYO_IO_EOF;
 
     return int_read(in, buf, len);
 }

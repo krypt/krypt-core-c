@@ -21,6 +21,7 @@ static void
 int_krypt_native_provider_mark(krypt_provider *provider)
 {
     if (!provider) return;
+
     /*TODO*/
 }
 
@@ -96,7 +97,7 @@ krypt_provider_register(krypt_provider *provider)
     if (!provider->name) rb_raise(eKryptError, "Provider must have a name");
 
     rb_provider = krypt_native_provider_new(provider);
-    rb_funcall(mKryptProvider, sKrypt_ID_register, 2, rb_intern(provider->name), rb_provider);
+    rb_funcall(mKryptProvider, sKrypt_ID_register, 2, rb_str_new2(provider->name), rb_provider);
 }
 
 void

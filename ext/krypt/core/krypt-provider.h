@@ -24,6 +24,13 @@
 
 #include <ruby.h>
 
+#ifndef KRYPT_OK
+#define KRYPT_OK 1
+#endif
+#ifndef KRYPT_ERR
+#define KRYPT_ERR -1
+#endif
+
 typedef struct krypt_provider_st krypt_provider;
 
 /* Message digest */
@@ -60,3 +67,4 @@ void krypt_error_add(const char * format, ...);
 void krypt_provider_register(krypt_provider *provider);
 
 #endif /* _KRYPT_PROVIDER_H_ */
+

@@ -176,23 +176,6 @@ KRYPT_ASN1_HEADER_GET_DEFINE(length)
  */
 KRYPT_ASN1_HEADER_GET_DEFINE(header_length)
 
-static binyo_outstream *
-int_krypt_outstream_new(VALUE io)
-{
-    int type;
-    type = TYPE(io);
-
-    if (type == T_FILE) {
-	return binyo_outstream_new_fd_io(io);
-    }
-    else if (rb_respond_to(io, sBinyo_ID_WRITE)) {
-	return binyo_outstream_new_io_generic(io);
-    }
-    else {
-	rb_raise(rb_eArgError, "Argument for encode_to must respond to write");
-    }
-}
-
 /**
  * call-seq:
  *    header.encode_to(io) -> self
@@ -211,10 +194,12 @@ krypt_asn1_header_encode_to(VALUE self, VALUE io)
 
     int_asn1_parsed_header_get(self, header);
 
-    out = int_krypt_outstream_new(io);
+    if (!(out = binyo_outstream_new_value(io))) 
+	krypt_error_raise(eKryptASN1SerializeError, "Error while trying to access the stream");
+
     result = krypt_asn1_header_encode(out, header->header);
     binyo_outstream_free(out);
-    if (!result)
+    if (result == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1SerializeError, "Error while encoding header");
     return self;
 }
@@ -237,7 +222,7 @@ krypt_asn1_header_bytes(VALUE self)
     int_asn1_parsed_header_get(self, header);
 
     out = binyo_outstream_new_bytes();
-    if (!krypt_asn1_header_encode(out, header->header)) {
+    if (krypt_asn1_header_encode(out, header->header) == KRYPT_ERR) {
 	binyo_outstream_free(out);
 	krypt_error_raise(eKryptASN1SerializeError, "Error while encoding ASN.1 header");
     }
@@ -261,9 +246,10 @@ static VALUE
 krypt_asn1_header_skip_value(VALUE self)
 {
     krypt_asn1_parsed_header *header;
-
+    
     int_asn1_parsed_header_get(self, header);
-    krypt_asn1_skip_value(header->in, header->header);
+    if (krypt_asn1_skip_value(header->in, header->header) == KRYPT_ERR)
+        krypt_error_raise(eKryptASN1ParseError, "Skipping the value failed");
     return Qnil;
 }
 
@@ -299,7 +285,8 @@ krypt_asn1_header_value(VALUE self)
 	size_t length;
 	int tag;
 
-	length = krypt_asn1_get_value(header->in, header->header, &value);
+	if (krypt_asn1_get_value(header->in, header->header, &value, &length) == KRYPT_ERR)
+            rb_raise(eKryptASN1ParseError, "Parsing the value failed");
 	tag = header->header->tag;
 
 	if (length != 0 || (tag != TAGS_NULL && tag != TAGS_END_OF_CONTENTS)) {
@@ -398,25 +385,6 @@ krypt_asn1_header_to_s(VALUE self)
 
 /* End Header code */
 
-/* Parser code */
-
-static binyo_instream *
-int_krypt_instream_new(VALUE io)
-{
-    int type;
-    type = TYPE(io);
-
-    if (type == T_FILE) {
-	return binyo_instream_new_fd_io(io);
-    }
-    else if (rb_respond_to(io, sBinyo_ID_READ)) {
-	return binyo_instream_new_io_generic(io);
-    }
-    else {
-	rb_raise(rb_eArgError, "Argument for next must respond to read");
-    }
-}
-
 /**
  * call-seq:
  *    parser.next(io) -> Header or nil
@@ -432,11 +400,17 @@ krypt_asn1_parser_next(VALUE self, VALUE io)
     krypt_asn1_header *header;
     int result;
     VALUE ret;
+    int type = TYPE(io);
 
-    in = int_krypt_instream_new(io);
+    if (type == T_STRING)
+	rb_raise(rb_eArgError, "Argument for next must respond to read");
+
+    if (!(in = binyo_instream_new_value(io)))
+	rb_raise(rb_eArgError, "Argument for next must respond to read");
+
     result = krypt_asn1_next_header(in, &header);
-    if (result == -1) goto error;
-    if (result == 0) {
+    if (result == KRYPT_ERR) goto error;
+    if (result == KRYPT_ASN1_EOF) {
 	binyo_instream_free(in);
 	return Qnil;
     }

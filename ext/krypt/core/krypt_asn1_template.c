@@ -107,12 +107,10 @@ krypt_asn1_template_new_from_stream(binyo_instream *in, krypt_asn1_header *heade
 {
     krypt_asn1_object *encoding;
     uint8_t *value = NULL;
-    ssize_t value_len;
+    size_t value_len;
 
-    if ((value_len = krypt_asn1_get_value(in, header, &value)) == -1)
-	return NULL;
-    
-    encoding = krypt_asn1_object_new_value(header, value, value_len);
+    if (krypt_asn1_get_value(in, header, &value, &value_len) == KRYPT_ERR) return NULL;
+    if (!(encoding = krypt_asn1_object_new_value(header, value, value_len))) return NULL;
     return krypt_asn1_template_new(encoding, definition, options);
 }
 
@@ -248,7 +246,7 @@ int_return_choice_attr(VALUE self, ID ivname)
 {
     VALUE dummy;
 
-    if (!krypt_asn1_template_get_cb_value(self, sKrypt_IV_VALUE, &dummy)) {
+    if (krypt_asn1_template_get_cb_value(self, sKrypt_IV_VALUE, &dummy) == KRYPT_ERR) {
 	krypt_error_raise(eKryptASN1Error, "Could not access %s", rb_id2name(ivname));
     }
     return rb_ivar_get(self, ivname);
@@ -260,7 +258,7 @@ krypt_asn1_template_get_callback(VALUE self, VALUE name)
     VALUE ret = Qnil;
     ID ivname = SYM2ID(name);
 
-    if (!krypt_asn1_template_get_cb_value(self, ivname, &ret))
+    if (krypt_asn1_template_get_cb_value(self, ivname, &ret) == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1Error, "Could not access %s", rb_id2name(ivname));
     return ret;
 }
@@ -305,8 +303,8 @@ krypt_asn1_template_cmp(VALUE self, VALUE other)
     if (!rb_respond_to(other, sKrypt_ID_TO_DER)) return Qnil;
     vs2 = krypt_to_der(other);
 
-    if (!krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
-		                         (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
+    if (krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
+	                      (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result) == KRYPT_ERR) {
 	krypt_error_raise(eKryptASN1Error, "Error while comparing values");
     }
     return INT2NUM(result);
@@ -381,7 +379,7 @@ krypt_asn1_template_to_der(VALUE template)
 {
     VALUE ret;
 
-    if (!krypt_asn1_template_encode(template, &ret))
+    if (krypt_asn1_template_encode(template, &ret) == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     return ret;
 }
