@@ -67,10 +67,10 @@ int_definite_read(binyo_instream *instream, uint8_t *buf, size_t len)
     
     int_safe_cast(in, instream);
 
-    if (!buf) return BINYO_IO_READ_ERR;
+    if (!buf) return BINYO_ERR;
 
     if (in->num_read == in->max_read)
-	return BINYO_IO_READ_EOF;
+	return BINYO_IO_EOF;
 
     if (in->max_read - in->num_read < len)
 	to_read = in->max_read - in->num_read;
@@ -78,10 +78,10 @@ int_definite_read(binyo_instream *instream, uint8_t *buf, size_t len)
 	to_read = len;
 
     r = binyo_instream_read(in->inner, buf, to_read);
-    if (r == BINYO_IO_READ_ERR) return BINYO_IO_READ_ERR;
+    if (r == BINYO_ERR || r == BINYO_IO_EOF) return BINYO_ERR;
     if (in->num_read >= SIZE_MAX - r) {
 	krypt_error_add("Stream too large");
-	return BINYO_IO_READ_ERR;
+	return BINYO_ERR;
     }
 
     in->num_read += r;

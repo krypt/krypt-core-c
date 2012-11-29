@@ -148,8 +148,8 @@ krypt_instream_pem_free_wrapper(binyo_instream *instream)
     xfree(in);
 }
 
-size_t
-krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out)
+int
+krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out, size_t *outlen)
 {
     krypt_instream_pem *in;
     krypt_b64_buffer *b64;
@@ -171,7 +171,8 @@ krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out)
     retlen = strlen(b64->name);
     *out = ALLOC_N(uint8_t, retlen);
     memcpy(*out, b64->name, retlen);
-    return retlen;
+    *outlen = retlen;
+    return BINYO_OK;
 }
 
 
@@ -201,18 +202,18 @@ static int
 int_match_header(krypt_pem_parse_ctx *ctx)
 {
     if (ctx->len == KRYPT_LINE_BUF_SIZE)
-	return 0;
+	return BINYO_ERR;
     if (strncmp(ctx->line, "-----BEGIN ", 11) == 0) {
 	size_t len;
 	len = ctx->len;
 	if (strncmp(ctx->line + len - 5, "-----", 5) != 0)
-	    return 0;
+	    return BINYO_ERR;
 	ctx->name = ALLOC_N(char, len - 11 - 4);
 	memcpy(ctx->name, ctx->line + 11, len - 11 - 5);
 	ctx->name[len - 11 - 5] = '\0';
-	return 1;
+	return BINYO_OK;
     }
-    return 0;
+    return BINYO_ERR;
 }
 
 static int
@@ -221,16 +222,16 @@ int_match_footer(krypt_pem_parse_ctx *ctx)
     char *name = ctx->name;
 
     if (ctx->len == KRYPT_LINE_BUF_SIZE)
-	return 0;
+	return BINYO_ERR;
     if (strncmp(ctx->line, "-----END ", 9) == 0) {
 	size_t len;
 	len = ctx->len;
 	if (strncmp(ctx->line + len - 5, "-----", 5) != 0)
-	    return 0;
+	    return BINYO_ERR;
 	if (strncmp(ctx->line + 9, name, len - 9 - 5) == 0)
-	    return 1;
+	    return BINYO_OK;
     }
-    return 0;
+    return BINYO_ERR;
 }
 
 static int
@@ -249,8 +250,8 @@ int_b64_fill(krypt_b64_buffer *in)
     out = binyo_outstream_new_bytes_size(BINYO_IO_BUF_SIZE + KRYPT_LINE_BUF_SIZE);
     linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
 
-    while (in->state != DONE && total < BINYO_IO_BUF_SIZE && linelen != BINYO_IO_READ_EOF) {
-	if (linelen == BINYO_IO_READ_ERR) return BINYO_ERR;
+    while (in->state != DONE && total < BINYO_IO_BUF_SIZE && linelen != BINYO_IO_EOF) {
+	if (linelen == BINYO_ERR) return BINYO_ERR;
 
 	if (linelen == 0) {
 	    linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
@@ -264,7 +265,7 @@ int_b64_fill(krypt_b64_buffer *in)
 		    linectx.line = linebuf;
 		    linectx.len = linelen;
 		    linectx.off = 0;
-		    if (int_match_header(&linectx)) {
+		    if (int_match_header(&linectx) == BINYO_OK) {
 			in->name = linectx.name;
 			in->state = CONTENT;
 		    }
@@ -276,7 +277,7 @@ int_b64_fill(krypt_b64_buffer *in)
 		    in->state = FOOTER;
 		}
 		else {
-		    if (!krypt_base64_buffer_decode_to(out, (uint8_t *) linebuf, 0, linelen)) {
+		    if (krypt_base64_buffer_decode_to(out, (uint8_t *) linebuf, 0, linelen) == KRYPT_ERR) {
 			krypt_error_add("Could not decode Base64 data");
 			return BINYO_ERR;
 		    }
@@ -292,7 +293,7 @@ int_b64_fill(krypt_b64_buffer *in)
 		    linectx.len = linelen;
 		    linectx.off = 0;
 		    linectx.name = in->name;
-		    if (int_match_footer(&linectx))
+		    if (int_match_footer(&linectx) == BINYO_OK)
 			in->state = DONE;
 		    else
 			linelen = binyo_instream_gets(in->inner, linebuf, KRYPT_LINE_BUF_SIZE);
@@ -306,12 +307,12 @@ int_b64_fill(krypt_b64_buffer *in)
 	}
     }
 
-    if (linelen == BINYO_IO_READ_ERR) return BINYO_ERR;
+    if (linelen == BINYO_ERR) return BINYO_ERR;
 
-    if (in->state == DONE || linelen == BINYO_IO_READ_EOF)
+    if (in->state == DONE || linelen == BINYO_IO_EOF)
 	in->eof = 1;
 
-    if (linelen == BINYO_IO_READ_EOF && in->state != DONE) {
+    if (linelen == BINYO_IO_EOF && in->state != DONE) {
 	binyo_outstream_free(out);
 	switch (in->state) {
 	    case HEADER:
@@ -354,18 +355,17 @@ int_b64_read(krypt_b64_buffer *in, uint8_t *buf, size_t len)
 
     while (total != len && !(in->off == in->len && in->eof)) {
 	if (in->off == in->len) {
-	    if (!int_b64_fill(in))
-		return BINYO_IO_READ_ERR;
+	    if (int_b64_fill(in) == BINYO_ERR) return BINYO_ERR;
 	}
 	total += int_consume_bytes(in, buf + total, len - total);
     }
 
     if (total == 0 && in->eof)
-	return BINYO_IO_READ_EOF;
+	return BINYO_IO_EOF;
 
     if (total > SSIZE_MAX) {
 	krypt_error_add("Return size too large: %ld", total);
-	return BINYO_IO_READ_ERR;
+	return BINYO_ERR;
     }
     return (ssize_t) total;
 }
@@ -374,7 +374,7 @@ static ssize_t
 int_pem_read(binyo_instream *instream, uint8_t *buf, size_t len)
 {
     krypt_instream_pem *in;
-    if (!buf) return BINYO_IO_READ_ERR;
+    if (!buf) return BINYO_ERR;
     int_safe_cast(in, instream);
     return int_b64_read(in->buffer, buf, len);
 }

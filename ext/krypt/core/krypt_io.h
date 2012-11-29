@@ -31,7 +31,7 @@ binyo_instream *krypt_instream_new_definite(binyo_instream *in, size_t length);
 binyo_instream *krypt_instream_new_pem(binyo_instream *original);
 void krypt_instream_pem_free_wrapper(binyo_instream *instream);
 
-size_t krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out);
+int krypt_pem_get_last_name(binyo_instream *instream, uint8_t **out, size_t *outlen);
 void krypt_pem_continue_stream(binyo_instream *instream);
 
 void Init_krypt_io(void);

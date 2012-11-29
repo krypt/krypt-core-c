@@ -19,8 +19,10 @@ static const size_t KRYPT_ASN1_LENGTH_LIMIT = SIZE_MAX >> CHAR_BIT;
 
 #define int_next_byte(in, b)				 	\
 do {							  	\
-    if (binyo_instream_read((in), &(b), 1) != 1)	  	\
-    	return 0;						\
+    if (binyo_instream_read((in), &(b), 1) != BINYO_OK) {  	\
+	krypt_error_add("Could not read byte from stream");	\
+    	return KRYPT_ERR;					\
+    }								\
 } while (0)						  	\
 
 static int int_parse_tag(uint8_t b, binyo_instream *in, krypt_asn1_header *out);
@@ -28,8 +30,8 @@ static int int_parse_complex_tag(uint8_t b, binyo_instream *in, krypt_asn1_heade
 static void int_parse_primitive_tag(uint8_t b, krypt_asn1_header *out);
 static int int_parse_length(binyo_instream *in, krypt_asn1_header *out);
 static int int_parse_complex_definite_length(uint8_t b, binyo_instream *in, krypt_asn1_header *out);
-static int int_parse_read_exactly(binyo_instream *in, size_t n, uint8_t **out);
-static ssize_t int_consume_stream(binyo_instream *in, uint8_t **out);
+static int int_parse_read_exactly(binyo_instream *in, size_t n, uint8_t **out, size_t *outlen);
+static int int_consume_stream(binyo_instream *in, uint8_t **out, size_t *outlen);
 static void int_compute_tag(krypt_asn1_header *header);
 static void int_compute_length(krypt_asn1_header *header);
 
@@ -40,8 +42,8 @@ static void int_compute_length(krypt_asn1_header *header);
  * @param in	The binyo_instream to be parsed from
  * @param out	On successful parsing, an instance of krypt_asn1_header
  * 		will be assigned
- * @return	1 if a new header was successfully parsed, 0 if EOF
- * 		has been reached, -1 in case of errors
+ * @return	KRYPT_OK if a new header was successfully parsed, KRYPT_ASN1_EOF if EOF
+ * 		has been reached, KRYPT_ERR in case of errors
  */		
 int
 krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out)
@@ -50,22 +52,22 @@ krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out)
     uint8_t b;
     krypt_asn1_header *header;
 
-    if (!in) return -1;
+    if (!in) return KRYPT_ERR;
 
     read = binyo_instream_read(in, &b, 1);
-    if (read == -1) return 0;
-    if (read != 1) {
+    if (read == BINYO_IO_EOF) return KRYPT_ASN1_EOF;
+    if (read == BINYO_ERR) {
        krypt_error_add("Error when parsing stream");
-       return -1;
+       return KRYPT_ERR;
     }
 
     header = krypt_asn1_header_new();
     
-    if (!int_parse_tag(b, in, header)) {
+    if (int_parse_tag(b, in, header) == KRYPT_ERR) {
        krypt_error_add("Error when parsing tag");
        goto error;
     }
-    if (!int_parse_length(in, header)) {
+    if (int_parse_length(in, header) == KRYPT_ERR) {
 	krypt_error_add("Error when parsing length");
 	goto error;
     }
@@ -75,10 +77,10 @@ krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out)
     }
 
     *out = header;
-    return 1;
+    return KRYPT_OK;
  error:
     krypt_asn1_header_free(header);
-    return -1;
+    return KRYPT_ERR;
 }
 
 /**
@@ -87,43 +89,46 @@ krypt_asn1_next_header(binyo_instream *in, krypt_asn1_header **out)
  *
  * @param in	The binyo_instream that the header was parsed from
  * @param last	The last header that was parsed from the stream
- * @return 1 if successful, 0 otherwise
+ * @return KRYPT_OK if successful, KRYPT_ERR otherwise
  */
 int
 krypt_asn1_skip_value(binyo_instream *in, krypt_asn1_header *last)
 {
-    if (!in) return 0;
-    if (!last) return 0;
-    return binyo_instream_skip(in, last->length);
+    if (!in) return KRYPT_ERR;
+    if (!last) return KRYPT_ERR;
+    if (binyo_instream_skip(in, last->length) == BINYO_OK)
+	return KRYPT_OK;
+    else
+	return KRYPT_ERR;
 }
 
 /**
  * Based on the last header that was parsed, this function reads and returns
  * the bytes that represent the value of the object represented by the header.
  *
- * @param in	The binyo_instream that the header was parsed from
- * @param last	The last header that was parsed from the stream
- * @param out   A pointer to the uint8_t* that shall receive the value
- * 		representing the currently parsed object
- * @return	The length of the value that has been parsed, or -1 if an error 
- *              occurred
+ * @param in		The binyo_instream that the header was parsed from
+ * @param last		The last header that was parsed from the stream
+ * @param out   	A pointer to the uint8_t* that shall receive the value
+ * 			representing the currently parsed object
+ * @param outlen        The length of the value that has been parsed
+ * @return		KRYPT_OK if successful, or KRYPT_ERR otherwise 
  */
-ssize_t
-krypt_asn1_get_value(binyo_instream *in, krypt_asn1_header *last, uint8_t **out)
+int
+krypt_asn1_get_value(binyo_instream *in, krypt_asn1_header *last, uint8_t **out, size_t *outlen)
 {
-    if (!in) return -1;
-    if (!last) return -1;
+    if (!in) return KRYPT_ERR;
+    if (!last) return KRYPT_ERR;
 
     if (!last->is_infinite) {
-	if (!int_parse_read_exactly(in, last->length, out))
-	    return -1;
-	else
-    	    return last->length;
+	if (int_parse_read_exactly(in, last->length, out, outlen) == KRYPT_ERR)
+	    return KRYPT_ERR;
+	*outlen = last->length;
+	return KRYPT_OK;
     }
     else {
-	size_t ret;
+	int ret;
 	binyo_instream *inf_stream = krypt_instream_new_chunked(in, 0);
-	ret = int_consume_stream(inf_stream, out);
+	ret = int_consume_stream(inf_stream, out, outlen);
 	binyo_instream_free(inf_stream);
 	return ret;
     }
@@ -168,7 +173,7 @@ krypt_asn1_get_value_stream(binyo_instream *in, krypt_asn1_header *last, int val
  * @param out		The binyo_outstream where the header shall be encoded 
  * 			to
  * @param header	The header that shall be encoded
- * @return              1 if successful, 0 otherwise
+ * @return              KRYPT_OK if successful, KRYPT_ERR otherwise
  */
 int
 krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header)
@@ -176,8 +181,8 @@ krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header)
     uint8_t *buf;
     size_t hlen;
 
-    if (!out) return 0;
-    if (!header) return 0;
+    if (!out) return KRYPT_ERR;
+    if (!header) return KRYPT_ERR;
 
     if (!header->tag_bytes)
 	int_compute_tag(header);
@@ -189,8 +194,8 @@ krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header)
     buf = ALLOCA_N(uint8_t, hlen);
     memcpy(buf, header->tag_bytes, header->tag_len);
     memcpy(buf + header->tag_len, header->length_bytes, header->length_len);
-    if (binyo_outstream_write(out, buf, hlen) < 0) return 0;
-    return 1;
+    if (binyo_outstream_write(out, buf, hlen) == BINYO_ERR) return KRYPT_ERR;
+    return KRYPT_OK;
 }
 
 /**
@@ -200,18 +205,17 @@ krypt_asn1_header_encode(binyo_outstream *out, krypt_asn1_header *header)
  * @param out		The binyo_outstream where the object shall be encoded 
  * 			to
  * @param object	The object that shall be encoded
- * @return 1 if successful, 0 otherwise
+ * @return 		KRYPT_OK if successful, KRYPT_ERR otherwise
  */
 int
 krypt_asn1_object_encode(binyo_outstream *out, krypt_asn1_object *object)
 {
-    if (!object) return 0;
-    if (!krypt_asn1_header_encode(out, object->header)) return 0;
-    if (!object->bytes) return 1;	
-    if (object->bytes_len == 0) return 1;
-    if (binyo_outstream_write(out, object->bytes, object->bytes_len) < 0)
-	return 0;
-    return 1;
+    if (!object) return KRYPT_ERR;
+    if (krypt_asn1_header_encode(out, object->header) == KRYPT_ERR) return KRYPT_ERR;
+    if (!object->bytes) return KRYPT_OK;	
+    if (object->bytes_len == 0) return KRYPT_OK;
+    if (binyo_outstream_write(out, object->bytes, object->bytes_len) == BINYO_ERR) return KRYPT_ERR;
+    return KRYPT_OK;
 }
 
 /**
@@ -316,8 +320,8 @@ krypt_asn1_cmp_set_of(uint8_t *s1, size_t len1,
 
     in1 = binyo_instream_new_bytes(s1, len1);
     in2 = binyo_instream_new_bytes(s2, len2);
-    if (krypt_asn1_next_header(in1, &h1) != 1) goto error;
-    if (krypt_asn1_next_header(in2, &h2) != 1) goto error;
+    if (krypt_asn1_next_header(in1, &h1) != KRYPT_OK) goto error;
+    if (krypt_asn1_next_header(in2, &h2) != KRYPT_OK) goto error;
 
     if (h1->tag == TAGS_END_OF_CONTENTS && h1->tag_class == TAG_CLASS_UNIVERSAL) {
 	*result = 1;
@@ -355,14 +359,14 @@ cleanup:
     binyo_instream_free(in2);
     krypt_asn1_header_free(h1);
     krypt_asn1_header_free(h2);
-    return 1;
+    return KRYPT_OK;
 error:
     binyo_instream_free(in1);
     binyo_instream_free(in2);
     if (h1) krypt_asn1_header_free(h1);
     if (h2) krypt_asn1_header_free(h2);
     krypt_error_add("Error while comparing values");
-    return 0;
+    return KRYPT_ERR;
 }
 
 static int
@@ -372,7 +376,7 @@ int_parse_tag(uint8_t b, binyo_instream *in, krypt_asn1_header *out)
     	return int_parse_complex_tag(b, in, out);
     } else {
     	int_parse_primitive_tag(b, out);
-	return 1;
+	return KRYPT_OK;
     }
 }
 
@@ -389,9 +393,9 @@ int_parse_primitive_tag(uint8_t b, krypt_asn1_header *out)
 
 #define int_buffer_add_byte(buf, b, out)			\
 do {								\
-    if (!binyo_buffer_write((buf), &(b), 1)) {			\
+    if (binyo_buffer_write((buf), &(b), 1) == KRYPT_ERR) {	\
 	binyo_buffer_free((buf));				\
-        return 0;						\
+        return KRYPT_ERR;					\
     }								\
 } while (0)
 
@@ -400,7 +404,7 @@ do {								\
     if ((t) > KRYPT_ASN1_TAG_LIMIT) {				\
 	binyo_buffer_free((buf));				\
 	krypt_error_add("Complex tag too large");		\
-	return 0;						\
+	return KRYPT_ERR;					\
     }								\
 } while (0)
 
@@ -419,7 +423,7 @@ int_parse_complex_tag(uint8_t b, binyo_instream *in, krypt_asn1_header *out)
 
     if (b == INFINITE_LENGTH_MASK) {
 	krypt_error_add("Bits 7 to 1 of the first subsequent octet shall not be 0 for complex tag encoding");
-	return 0;
+	return KRYPT_ERR;
     }
 
     while ((b & INFINITE_LENGTH_MASK) == INFINITE_LENGTH_MASK) {
@@ -436,7 +440,7 @@ int_parse_complex_tag(uint8_t b, binyo_instream *in, krypt_asn1_header *out)
     tag |= (b & 0x7f);
     out->tag = tag;
     out->tag_len = binyo_buffer_get_bytes_free(buffer, &(out->tag_bytes));
-    return 1;
+    return KRYPT_OK;
 }
 
 #define int_set_single_byte_length(h, b)	\
@@ -467,7 +471,7 @@ int_parse_length(binyo_instream *in, krypt_asn1_header *out)
 	out->length = b;
 	int_set_single_byte_length(out, b);
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 #define int_check_length(l, buf)				\
@@ -476,7 +480,7 @@ do {								\
 	xfree((buf));						\
 	(buf) = NULL;						\
 	krypt_error_add("Complex length too long");		\
-	return 0;						\
+	return KRYPT_ERR;					\
     }								\
 } while (0)
 
@@ -490,7 +494,7 @@ int_parse_complex_definite_length(uint8_t b, binyo_instream *in, krypt_asn1_head
 
     if (b == 0xff) {
 	krypt_error_add("Initial octet of complex definite length shall not be 0xFF");
-	return 0;
+	return KRYPT_ERR;
     }
     num_bytes = b & 0x7f;
 
@@ -507,12 +511,12 @@ int_parse_complex_definite_length(uint8_t b, binyo_instream *in, krypt_asn1_head
 
     out->length = len;
     out->length_len = num_bytes + 1;
-    return 1;
+    return KRYPT_OK;
 }
 
 
 static int
-int_parse_read_exactly(binyo_instream *in, size_t n, uint8_t **out)
+int_parse_read_exactly(binyo_instream *in, size_t n, uint8_t **out, size_t *outlen)
 {
     uint8_t *ret, *p;
     size_t offset = 0;
@@ -520,28 +524,31 @@ int_parse_read_exactly(binyo_instream *in, size_t n, uint8_t **out)
 
     if (n == 0) {
 	*out = NULL;
-       	return 1;
+       	return KRYPT_OK;
     }
 
     ret = ALLOC_N(uint8_t, n);
     p = ret;
     while (offset != n) {
 	read = binyo_instream_read(in, p, n - offset);
-	if (read < 0) {
+	if (read  == BINYO_IO_EOF || read == BINYO_ERR) {
 	    xfree(ret);
 	    *out = NULL;
-	    krypt_error_add("Premature EOF detected");
-	    return 0;
+	    if (read == BINYO_IO_EOF)
+		krypt_error_add("Premature EOF detected");
+	    else
+		krypt_error_add("Error while reading from stream");
+	    return KRYPT_ERR;
 	}
 	p += read;
 	offset += read;
     }
     *out = ret;
-    return 1;
+    return KRYPT_OK;
 }
 
-static ssize_t
-int_consume_stream(binyo_instream *in, uint8_t **out)
+static int 
+int_consume_stream(binyo_instream *in, uint8_t **out, size_t *outlen)
 {
     binyo_byte_buffer *out_buf;
     uint8_t *in_buf;
@@ -551,21 +558,19 @@ int_consume_stream(binyo_instream *in, uint8_t **out)
     in_buf = ALLOC_N(uint8_t, BINYO_IO_BUF_SIZE);
     out_buf = binyo_buffer_new_size(512);
     while ((read = binyo_instream_read(in, in_buf, BINYO_IO_BUF_SIZE)) >= 0) {
-	if (!binyo_buffer_write(out_buf, in_buf, read)) {
-	    goto error;
-	}
+	if (binyo_buffer_write(out_buf, in_buf, read) == BINYO_ERR) goto error;
     }
-    if (read < -1) goto error;
+    if (read == BINYO_ERR) goto error;
 
     size = binyo_buffer_get_bytes_free(out_buf, out);
-    if (size > SSIZE_MAX) goto error;
     xfree(in_buf);
-    return (ssize_t) size;
+    *outlen = size;
+    return KRYPT_OK;
 
 error:
     xfree(in_buf);
     binyo_buffer_free(out_buf);
-    return -1;
+    return KRYPT_ERR;
 }
 
 #define int_determine_num_shifts(i, value, by)		\

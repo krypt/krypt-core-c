@@ -29,9 +29,9 @@ int_consume_stream(binyo_instream *in, VALUE *vout)
     while ((read = binyo_instream_read(in, buf, BINYO_IO_BUF_SIZE)) >= 0) {
 	binyo_outstream_write(out, buf, read);
     }
-    if (read < -1) {
+    if (read == BINYO_ERR) {
 	binyo_outstream_free(out);
-	return 0;
+	return KRYPT_ERR;
     }
 
     len = binyo_outstream_bytes_get_bytes_free(out, &str);
@@ -39,9 +39,9 @@ int_consume_stream(binyo_instream *in, VALUE *vout)
 	*vout = Qnil;
     } else {
     	*vout = rb_str_new((const char*)str, len);
+	xfree(str);
     }
-    xfree(str);
-    return 1;
+    return KRYPT_OK;
 }
 
 /*
@@ -90,7 +90,7 @@ krypt_pem_decode(VALUE self, VALUE pem)
     
     ary = rb_ary_new();
 
-    while ((result = int_consume_stream(in, &der))) {
+    while ((result = int_consume_stream(in, &der)) == KRYPT_OK) {
 	if (NIL_P(der))
 	    break;
 
@@ -99,14 +99,14 @@ krypt_pem_decode(VALUE self, VALUE pem)
 	    uint8_t *name;
 	    size_t len;
 	    VALUE vname;
-	    len = krypt_pem_get_last_name(in, &name);
+	    if (krypt_pem_get_last_name(in, &name, &len) == BINYO_ERR) goto error;
 	    vname = rb_str_new((const char *) name, len);
 	    xfree(name);
 	    rb_yield_values(3, der, vname, LONG2NUM(i++));
 	}
 	krypt_pem_continue_stream(in);
     }
-    if (!result) goto error;
+    if (result == KRYPT_ERR) goto error;
 
     binyo_instream_free(in);
     return ary;

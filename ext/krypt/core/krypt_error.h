@@ -13,6 +13,11 @@
 #ifndef _KRYPT_ERROR_H_
 #define _KRYPT_ERROR_H_
 
+#define KRYPT_OK 1
+#define KRYPT_ERR -1
+
+#define KRYPT_ASN1_EOF -2
+
 void krypt_error_add(const char *format, ...);
 
 int krypt_has_errors(void);

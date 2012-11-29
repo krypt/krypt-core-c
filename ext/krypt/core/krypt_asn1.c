@@ -248,9 +248,9 @@ krypt_asn1_data_new(binyo_instream *in, krypt_asn1_header *header)
     krypt_asn1_data *data;
     krypt_asn1_object *encoding;
     uint8_t *value = NULL;
-    ssize_t value_len;
+    size_t value_len;
 
-    if ((value_len = krypt_asn1_get_value(in, header, &value)) == -1)
+    if (krypt_asn1_get_value(in, header, &value, &value_len) == KRYPT_ERR)
 	return Qnil;
     
     encoding = krypt_asn1_object_new_value(header, value, value_len);
@@ -354,7 +354,7 @@ krypt_asn1_data_initialize(VALUE self, VALUE value, VALUE vtag, VALUE vtag_class
 	rb_raise(eKryptASN1Error, "Explicit tagging is only supported for explicit UNIVERSAL sub classes of ASN1Data");
     if (stag_class == sKrypt_TC_UNIVERSAL && tag > 30)
 	rb_raise(eKryptASN1Error, "Tag too large for UNIVERSAL tag class");
-    if ((tag_class = krypt_asn1_tag_class_for_id(stag_class)) < 0)
+    if ((tag_class = krypt_asn1_tag_class_for_id(stag_class)) == KRYPT_ERR)
         rb_raise(eKryptASN1Error, "Unknown tag class");
     is_constructed = rb_respond_to(value, sKrypt_ID_EACH);
     
@@ -392,7 +392,7 @@ int_asn1_default_initialize(VALUE self,
     stag_class = SYM2ID(vtag_class);
     if (stag_class == sKrypt_TC_UNIVERSAL && tag > 30)
 	rb_raise(eKryptASN1Error, "Tag too large for UNIVERSAL tag class");
-    if ((tag_class = krypt_asn1_tag_class_for_id(stag_class)) < 0)
+    if ((tag_class = krypt_asn1_tag_class_for_id(stag_class)) == KRYPT_ERR)
         rb_raise(eKryptASN1Error, "Unknown tag class");
     
     is_constructed = rb_respond_to(value, sKrypt_ID_EACH);
@@ -651,7 +651,6 @@ krypt_asn1_data_get_tag_class(VALUE self)
     return int_asn1_data_get_tag_class(self);
 }
 
-
 static int int_asn1_decode_value(VALUE self);
 
 static int
@@ -672,12 +671,11 @@ int_asn1_handle_explicit_tagging(VALUE self, krypt_asn1_data *data, ID new_tc)
 
     if (invalidate_value) {
 	if (!int_asn1_data_is_decoded(data)) {
-	    if(!int_asn1_decode_value(self))
-		rb_raise(eKryptASN1Error, "Error while decoding value");
+	    if(int_asn1_decode_value(self) == KRYPT_ERR) return KRYPT_ERR;
 	}
 	int_invalidate_value(data->object);
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 /*
@@ -705,7 +703,7 @@ krypt_asn1_data_set_tag_class(VALUE self, VALUE tag_class)
 	rb_raise(eKryptASN1Error, "Cannot explicitly tag value with unknown default tag");
 
     header = data->object->header;
-    if ((new_tag_class = krypt_asn1_tag_class_for_id(new_tc)) < 0)
+    if ((new_tag_class = krypt_asn1_tag_class_for_id(new_tc)) == KRYPT_ERR)
         rb_raise(eKryptASN1Error, "Cannot set tag class");
 
     header->tag_class = new_tag_class;
@@ -714,7 +712,7 @@ krypt_asn1_data_set_tag_class(VALUE self, VALUE tag_class)
     if (data->update_cb)
 	data->update_cb(data);
 
-    if (!int_asn1_handle_explicit_tagging(self, data, new_tc))
+    if (int_asn1_handle_explicit_tagging(self, data, new_tc) == KRYPT_ERR)
 	rb_raise(eKryptASN1Error, "Tagging explicitly failed");
 
     int_asn1_data_set_modified(data, 1);
@@ -809,11 +807,11 @@ int_asn1_decode_value(VALUE self)
     /* TODO: sync */
     if (!int_asn1_data_is_decoded(data)) {
 	VALUE value;
-	if (!int_asn1_data_value_decode(self, data, &value)) return 0;
+	if (int_asn1_data_value_decode(self, data, &value) == KRYPT_ERR) return KRYPT_ERR;
 	int_asn1_data_set_value(self, value);
 	int_asn1_data_set_decoded(data, 1);
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 /*
@@ -827,7 +825,7 @@ int_asn1_decode_value(VALUE self)
 static VALUE
 krypt_asn1_data_get_value(VALUE self)
 {
-    if (!int_asn1_decode_value(self))
+    if (int_asn1_decode_value(self) == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1Error, "Error while decoding value");
     return int_asn1_data_get_value(self);
 }
@@ -888,12 +886,12 @@ int_asn1_make_explicit(VALUE value, int default_tag, VALUE *out)
 
     if (default_tag == -1) {
 	krypt_error_add("Cannot encode value with explicit tagging");
-	return 0;
+	return KRYPT_ERR;
     }
 
     if (!krypt_asn1_infos[default_tag].klass) {
 	krypt_error_add("Unsupported tag: %d", default_tag);
-	return 0;
+	return KRYPT_ERR;
     }
 
     ary = rb_ary_new();
@@ -912,7 +910,7 @@ int_asn1_make_explicit(VALUE value, int default_tag, VALUE *out)
     rb_ary_push(ary, universal);
 
     *out = ary;
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -925,13 +923,15 @@ int_asn1_encode_to(binyo_outstream *out, krypt_asn1_data *data, VALUE self)
 	VALUE value;
 	value = int_asn1_data_get_value(self);
 	if (int_asn1_data_is_explicit(data)) {
-	    if (!int_asn1_make_explicit(value, data->default_tag, &value)) return 0;
+	    if (int_asn1_make_explicit(value, data->default_tag, &value) == KRYPT_ERR) return KRYPT_ERR;
 	    data->object->header->is_constructed = 1; /* explicitly tagged values are always constructed */
 	}
 	return int_asn1_data_encode_to(self, out, value, data);
     }
     else {
-	return krypt_asn1_object_encode(out, object);
+	if (krypt_asn1_object_encode(out, object) == KRYPT_ERR)
+            return KRYPT_ERR;
+        return KRYPT_OK;
     }
 }
 
@@ -960,7 +960,7 @@ krypt_asn1_data_encode_to(VALUE self, VALUE io)
     out = binyo_outstream_new_value(io);
     result = int_asn1_encode_to(out, data, self);
     binyo_outstream_free(out);
-    if (!result)
+    if (result == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     return self;
 }
@@ -977,7 +977,7 @@ int_asn1_data_to_der_cached(krypt_asn1_object *object)
     bytes = ALLOCA_N(uint8_t, len);
     out = binyo_outstream_new_bytes_prealloc(bytes, len);
 
-    if (!krypt_asn1_object_encode(out, object)) {
+    if (krypt_asn1_object_encode(out, object) == KRYPT_ERR) {
 	binyo_outstream_free(out);
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     }
@@ -997,7 +997,7 @@ int_asn1_data_to_der_non_cached(krypt_asn1_data *data, VALUE self)
 
     out = binyo_outstream_new_bytes_size(2048);
 
-    if (!int_asn1_encode_to(out, data, self)) {
+    if (int_asn1_encode_to(out, data, self) == KRYPT_ERR) {
 	binyo_outstream_free(out);
 	krypt_error_raise(eKryptASN1Error, "Error while encoding value");
     }
@@ -1087,8 +1087,8 @@ krypt_asn1_data_cmp(VALUE a, VALUE b)
     if (!rb_respond_to(b, sKrypt_ID_TO_DER)) return Qnil;
     vs2 = krypt_to_der(b);
 
-    if(!krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
-	                      (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result)) {
+    if(krypt_asn1_cmp_set_of((uint8_t *) RSTRING_PTR(vs1), (size_t) RSTRING_LEN(vs1),
+	                     (uint8_t *) RSTRING_PTR(vs2), (size_t) RSTRING_LEN(vs2), &result) == KRYPT_ERR) {
 	krypt_error_raise(eKryptASN1Error, "Error while comparing values");
     }
     return INT2NUM(result);
@@ -1146,14 +1146,14 @@ int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
 
     in = binyo_instream_new_bytes(object->bytes, object->bytes_len);
     
-    while ((ret = krypt_asn1_next_header(in, &header)) == 1) {
+    while ((ret = krypt_asn1_next_header(in, &header)) == KRYPT_OK) {
 	if (!(cur = krypt_asn1_data_new(in, header))) {
 	    goto error;
 	}
 	rb_ary_push(*out, cur);
     }
 
-    if (ret == -1) goto error;
+    if (ret == KRYPT_ERR) goto error;
 
     /* discard EOC if available */
     if (object->header->is_infinite) {
@@ -1162,11 +1162,11 @@ int_asn1_cons_value_decode(VALUE self, krypt_asn1_data *data, VALUE *out)
     }
 
     binyo_instream_free(in);
-    return 1;
+    return KRYPT_OK;
 
 error: 
     binyo_instream_free(in);
-    return 0;
+    return KRYPT_ERR;
 }
 
 static VALUE
@@ -1181,7 +1181,7 @@ int_cons_encode_sub_elems_i(VALUE cur, VALUE args)
     Data_Get_Struct(rb_ary_entry(args, 1), int, eoc_p);
     int_asn1_data_get(cur, data);
 
-    if (!int_asn1_encode_to(out, data, cur))
+    if (int_asn1_encode_to(out, data, cur) == KRYPT_ERR)
 	rb_raise(eKryptASN1Error, "Error while encoding values");
 
     header = data->object->header;
@@ -1207,11 +1207,11 @@ int_cons_add_eoc(binyo_outstream *out)
     VALUE eoc = int_asn1_end_of_contents_new_instance();
 
     int_asn1_data_get(eoc, data);
-    if (!int_asn1_encode_to(out, data, eoc)) {
+    if (int_asn1_encode_to(out, data, eoc) == KRYPT_ERR) {
 	krypt_error_add("Adding final END OF CONTENTS failed");
-	return 0;
+	return KRYPT_ERR;
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -1228,11 +1228,11 @@ int_cons_encode_sub_elems_enum(binyo_outstream *out, VALUE enumerable, int infin
     rb_ary_push(args, wrapped_eoc_p);
     rb_ary_push(args, enumerable);
     (void) rb_protect(int_cons_encode_sub_elems_wrapped, args, &state);
-    if (state) return 0;
+    if (state) return KRYPT_ERR;
     if (infinite && !eoc_p) { /* add EOC if it was missing */
 	return int_cons_add_eoc(out);
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -1247,7 +1247,7 @@ int_cons_add_eoc_ary(binyo_outstream *out, VALUE ary, long i)
     if (header->tag != TAGS_END_OF_CONTENTS || header->tag_class != TAG_CLASS_UNIVERSAL) {
 	return int_cons_add_eoc(out);
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -1262,14 +1262,13 @@ int_cons_encode_sub_elems_ary(binyo_outstream *out, VALUE ary, int infinite)
 
 	cur = rb_ary_entry(ary, i);
 	int_asn1_data_get(cur, data);
-	if (!int_asn1_encode_to(out, data, cur))
-	    return 0;
+	if (int_asn1_encode_to(out, data, cur) == KRYPT_ERR) return KRYPT_ERR;
     }
 
     if (infinite) { /* add closing EOC if it was missing */
-	if (!int_cons_add_eoc_ary(out, ary, i)) return 0;
+	if (int_cons_add_eoc_ary(out, ary, i) == KRYPT_ERR) return KRYPT_ERR;
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 static VALUE
@@ -1305,12 +1304,13 @@ int_cons_encode_sub_elems(binyo_outstream *out, VALUE enumerable, krypt_asn1_dat
     krypt_asn1_header *header;
 
     if (NIL_P(enumerable))
-	return 1;
+	return KRYPT_OK;
 
     header = data->object->header;
     if (header->tag == TAGS_SET &&
 	header->tag_class == TAG_CLASS_UNIVERSAL &&
-       	int_asn1_data_is_modified(data)) {
+       	int_asn1_data_is_modified(data)) 
+    {
 	/* We need to apply proper SET (OF) encoding when creating a new SET */
 	enumerable = int_cons_sort_set(enumerable);
     }
@@ -1327,12 +1327,12 @@ int_asn1_cons_update_length(VALUE ary, krypt_asn1_data *data, uint8_t **out, siz
 {
     binyo_outstream *bos = binyo_outstream_new_bytes_size(1024);
 
-    if (!int_cons_encode_sub_elems(bos, ary, data)) {
+    if (int_cons_encode_sub_elems(bos, ary, data) == KRYPT_ERR) {
 	binyo_outstream_free(bos);
-	return 0;
+	return KRYPT_ERR;
     }
     *outlen = binyo_outstream_bytes_get_bytes_free(bos, out);
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -1342,18 +1342,18 @@ int_asn1_cons_encode_update(binyo_outstream *out, VALUE ary, krypt_asn1_data *da
     uint8_t *bytes = NULL;
     krypt_asn1_header *header = data->object->header;
 
-    if (!int_asn1_cons_update_length(ary, data, &bytes, &len)) goto error;
+    if (int_asn1_cons_update_length(ary, data, &bytes, &len) == KRYPT_ERR) goto error;
     header->length = len;
-    if (!krypt_asn1_header_encode(out, header)) goto error;
+    if (krypt_asn1_header_encode(out, header) == KRYPT_ERR) goto error;
     if (header->length > 0) {
-	if (binyo_outstream_write(out, bytes, len) < 0) goto error;
+	if (binyo_outstream_write(out, bytes, len) == BINYO_ERR) goto error;
     }
 
     xfree(bytes);
-    return 1;
+    return KRYPT_OK;
 error:
     if (bytes) xfree(bytes);
-    return 0;
+    return KRYPT_ERR;
 }
 
 
@@ -1368,7 +1368,7 @@ int_asn1_cons_encode_to(VALUE self, binyo_outstream *out, VALUE ary, krypt_asn1_
 	int tag = header->tag;
 	if (tag != TAGS_SEQUENCE && tag != TAGS_SET && !header->is_infinite) {
 	    krypt_error_add("Primitive constructed values must be infinite length");
-	    return 0;
+	    return KRYPT_ERR;
 	}
     }
 
@@ -1378,9 +1378,9 @@ int_asn1_cons_encode_to(VALUE self, binyo_outstream *out, VALUE ary, krypt_asn1_
     if (header->length_bytes == NULL && !header->is_infinite) {
 	return int_asn1_cons_encode_update(out, ary, data);
     } else {
-	if (!krypt_asn1_header_encode(out, header)) return 0;
-	if (!int_cons_encode_sub_elems(out, ary, data)) return 0;
-	return 1;
+	if (krypt_asn1_header_encode(out, header) == KRYPT_ERR) return KRYPT_ERR;
+	if (int_cons_encode_sub_elems(out, ary, data) == KRYPT_ERR) return KRYPT_ERR;
+	return KRYPT_OK;
     }
 }
 
@@ -1408,14 +1408,16 @@ int_asn1_prim_encode_to(VALUE self, binyo_outstream *out, VALUE value, krypt_asn
 	int tag = object->header->tag;
 	if (tag == TAGS_SEQUENCE || tag == TAGS_SET) {
 	    krypt_error_add("Set/Sequence value must be constructed");
-	    return 0;
+	    return KRYPT_ERR;
 	}
     }
 
-    if (!data->codec->validator(self, value)) return 0;
-    if (!data->codec->encoder(self, value, &object->bytes, &object->bytes_len)) return 0;
+    if (data->codec->validator(self, value) == KRYPT_ERR) return KRYPT_ERR;
+    if (data->codec->encoder(self, value, &object->bytes, &object->bytes_len) == KRYPT_ERR) return KRYPT_ERR;
     object->header->length = object->bytes_len;
-    return krypt_asn1_object_encode(out, object);
+    if (krypt_asn1_object_encode(out, object) == KRYPT_ERR) return KRYPT_ERR;
+
+    return KRYPT_OK;
 }
 
 static VALUE
@@ -1433,7 +1435,7 @@ krypt_asn1_bit_string_set_unused_bits(VALUE self, VALUE unused_bits)
 static VALUE
 krypt_asn1_bit_string_get_unused_bits(VALUE self)
 {
-    if (!int_asn1_decode_value(self))
+    if (int_asn1_decode_value(self) == KRYPT_ERR)
 	krypt_error_raise(eKryptASN1Error, "Error while decoding value");
     return rb_ivar_get(self, sKrypt_IV_UNUSED_BITS);
 }
@@ -1448,15 +1450,15 @@ krypt_asn1_decode_stream(binyo_instream *in, VALUE *out)
     int result;
 
     result = krypt_asn1_next_header(in, &header);
-    if (result == 0 || result == -1) return result;
+    if (result == KRYPT_ASN1_EOF || result == KRYPT_ERR) return result;
 
     ret = krypt_asn1_data_new(in, header);
     if (NIL_P(ret)) {
 	krypt_asn1_header_free(header);
-	return 0;
+	return KRYPT_ERR;
     }
     *out = ret;
-    return 1;
+    return KRYPT_OK;
 }
 
 static VALUE
@@ -1477,7 +1479,7 @@ int_asn1_fallback_decode(binyo_instream *in, binyo_instream *cache)
     if (lookahead)
 	xfree(lookahead);
     binyo_instream_free(retry);
-    if (result != 1) 
+    if (result != KRYPT_OK) 
 	krypt_error_raise(eKryptASN1Error, "Error while DER-decoding value");
     return ret;
 }
@@ -1517,14 +1519,12 @@ krypt_asn1_decode(VALUE self, VALUE obj)
     binyo_instream *cache;
     binyo_instream *pem;
     VALUE ret;
-    int result;
 
     /* Try PEM first, if it fails, try as DER */
     in = krypt_instream_new_value_der(obj);
     cache = binyo_instream_new_cache(in);
     pem = krypt_instream_new_pem(cache);
-    result = krypt_asn1_decode_stream(pem, &ret);
-    if (result != 1) {
+    if (krypt_asn1_decode_stream(pem, &ret) != KRYPT_OK) {
 	krypt_instream_pem_free_wrapper(pem);
 	return int_asn1_fallback_decode(in, cache);
     }
@@ -1554,7 +1554,7 @@ krypt_asn1_decode_der(VALUE self, VALUE obj)
     binyo_instream *in = krypt_instream_new_value_der(obj);
     result = krypt_asn1_decode_stream(in, &ret);
     binyo_instream_free(in);
-    if (result != 1)
+    if (result != KRYPT_OK)
 	krypt_error_raise(eKryptASN1Error, "Error while DER-decoding value");
     return ret;
 }
@@ -1582,7 +1582,7 @@ krypt_asn1_decode_pem(VALUE self, VALUE obj)
     pem = krypt_instream_new_pem(krypt_instream_new_value_pem(obj));
     result = krypt_asn1_decode_stream(pem, &ret);
     binyo_instream_free(pem);
-    if (result != 1)
+    if (result != KRYPT_OK)
 	krypt_error_raise(eKryptASN1Error, "Error while PEM-decoding value");
     return ret;
 }
@@ -1640,7 +1640,7 @@ krypt_asn1_tag_class_for_id(ID tag_class)
     str = rb_funcall(ID2SYM(tag_class), rb_intern("to_s"), 0);
     StringValueCStr(str);
     krypt_error_add("Unknown tag class: %s", RSTRING_PTR(str));
-    return -1;
+    return KRYPT_ERR;
 }
 
 void

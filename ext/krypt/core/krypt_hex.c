@@ -44,7 +44,7 @@ int_hex_encode(uint8_t *bytes, size_t len, uint8_t *out)
 	out[j] = krypt_hex_table[b >> 4];
 	out[j + 1] = krypt_hex_table[b & 0x0f];
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 static int
@@ -59,87 +59,91 @@ int_hex_decode(uint8_t *bytes, size_t len, uint8_t *out)
 	d = (uint8_t) bytes[i*2+1];
 	if (c > KRYPT_HEX_INV_MAX || d > KRYPT_HEX_INV_MAX) {
 	    krypt_error_add("Illegal hex character detected: %x or %x", c, d);
-	    return 0;
+	    return KRYPT_ERR;
 	}
 	b = krypt_hex_table_inv[c];
 	if (b < 0) {
 	    krypt_error_add("Illegal hex character detected: %x", c);
-	    return 0;
+	    return KRYPT_ERR;
 	}
 	out[i] = b << 4;
 	b = krypt_hex_table_inv[d];
 	if (b < 0) {
 	    krypt_error_add("Illegal hex character detected: %x", d);
-	    return 0;
+	    return KRYPT_ERR;
 	}
 	out[i] |= b;
     }
-    return 1;
+    return KRYPT_OK;
 }
 
 #define int_hex_encode_tests(bytes, len, tmp)				\
 do {									\
     if (!(bytes)) {							\
-	(tmp) = -1;							\
+	(tmp) = KRYPT_ERR;						\
     }									\
     if ((len) > SSIZE_MAX / 2) {					\
 	krypt_error_add("Buffer too large: %ld", (len));		\
-	(tmp) = -1;							\
+	(tmp) = KRYPT_ERR;						\
     }									\
 } while (0)
 
-ssize_t
-krypt_hex_encode(uint8_t *bytes, size_t len, uint8_t **out)
+int
+krypt_hex_encode(uint8_t *bytes, size_t len, uint8_t **out, size_t *outlen)
 {
-    ssize_t ret;
+    size_t ret;
     uint8_t *retval;
     int tmp = 0;
 
     int_hex_encode_tests(bytes, len, tmp);
-    if (tmp == -1)
-	return -1;
+    if (tmp == KRYPT_ERR) return KRYPT_ERR;
 
     ret = 2 * len;
     retval = ALLOC_N(uint8_t, ret);
-    int_hex_encode(bytes, len, retval);
+    if (int_hex_encode(bytes, len, retval) == KRYPT_ERR) {
+	xfree(retval);
+	return KRYPT_ERR;
+    }
+
     *out = retval;
-    return ret;
+    *outlen = ret;
+    return KRYPT_OK;
 }
 
 #define int_hex_decode_tests(bytes, len, tmp)				\
 do {									\
     if (!(bytes)) {							\
-	(tmp) = -1;							\
+	(tmp) = KRYPT_ERR;						\
     }									\
     if ((len) % 2) {							\
 	krypt_error_add("Buffer length must be a multiple of 2");	\
-	(tmp) = -1;							\
+	(tmp) = KRYPT_ERR;						\
     }									\
     if ((len) / 2 > SSIZE_MAX) {					\
 	krypt_error_add("Buffer too large: %ld", (len));		\
-	(tmp) = -1;							\
+	(tmp) = KRYPT_ERR;						\
     }									\
 } while (0)
 
-ssize_t
-krypt_hex_decode(uint8_t *bytes, size_t len, uint8_t **out)
+int
+krypt_hex_decode(uint8_t *bytes, size_t len, uint8_t **out, size_t *outlen)
 {
-    ssize_t ret;
+    size_t ret;
     uint8_t *retval;
     int tmp = 0;
     
     int_hex_decode_tests(bytes, len, tmp);
-    if (tmp == -1)
-	return -1;
+    if (tmp == KRYPT_ERR) return KRYPT_ERR;
 
     ret = len / 2;
     retval = ALLOC_N(uint8_t, ret);
-    if (!int_hex_decode(bytes, len, retval)) {
+    if (int_hex_decode(bytes, len, retval) == KRYPT_ERR) {
 	xfree(retval);
-	return -1;
+	return KRYPT_ERR;
     }
     *out = retval;
-    return ret;
+    *outlen = ret;
+    return KRYPT_OK;
 }
 
 /* Krypt::Hex */
@@ -153,14 +157,14 @@ do {										\
         krypt_error_raise(eKryptHexError, "Bytes null");			\
     if ((mode) == KRYPT_HEX_DECODE) {						\
 	int_hex_decode_tests((bytes), (len), tmp);				\
-	if (tmp == -1)								\
+	if (tmp == KRYPT_ERR)							\
 	    krypt_error_raise(eKryptHexError, "Decoding the value failed");	\
 	result_len = (len) / 2;							\
     	result = ALLOCA_N(uint8_t, result_len);					\
 	tmp = int_hex_decode((bytes), (len), result);				\
     } else if ((mode) == KRYPT_HEX_ENCODE) {					\
 	int_hex_encode_tests((bytes), (len), tmp);				\
-	if (tmp == -1)								\
+	if (tmp == KRYPT_ERR)							\
 	    krypt_error_raise(eKryptHexError, "Encoding the value failed");	\
 	result_len = (len) * 2;							\
 	result = ALLOCA_N(uint8_t, result_len);					\
@@ -168,7 +172,7 @@ do {										\
     } else {									\
 	krypt_error_raise(rb_eRuntimeError, "Internal error");			\
     }										\
-    if (!tmp)									\
+    if (tmp == KRYPT_ERR)							\
 	krypt_error_raise(eKryptHexError, "Processing the hex value failed."); 	\
     (ret) = rb_str_new((const char *) result, result_len);			\
 } while (0)
@@ -232,3 +236,4 @@ Init_krypt_hex(void)
     rb_define_module_function(mKryptHex, "decode", krypt_hex_module_decode, 1);
     rb_define_module_function(mKryptHex, "encode", krypt_hex_module_encode, 1);
 }
+
