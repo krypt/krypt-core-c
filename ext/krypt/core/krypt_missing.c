@@ -82,7 +82,7 @@ krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
     xfree(longs);
     *out = bytes;
     *outlen = ptr - bytes;
-    return 1;
+    return KRYPT_OK;
 }
 #else
 int
@@ -94,7 +94,7 @@ krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
     int free_hex = 0;
     long hexstrlen;
     uint8_t *numbytes;
-    ssize_t numlen;
+    size_t numlen;
 
     sign = RBIGNUM_NEGATIVE_P(bignum);
 
@@ -117,9 +117,9 @@ krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
 	free_hex = 1;
     }
 
-    if ((numlen = krypt_hex_decode(hexstrbytes, hexstrlen, &numbytes)) == -1) {
+    if (krypt_hex_decode(hexstrbytes, hexstrlen, &numbytes, &numlen) == KRYPT_ERR) {
 	if (free_hex) xfree(hexstrbytes);
-	return 0;
+	return KRYPT_ERR;
     }
     if (sign) {
 	krypt_compute_twos_complement(numbytes, numbytes, numlen);
@@ -135,7 +135,7 @@ krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *outlen)
     if (free_hex) xfree(hexstrbytes);
     *out = numbytes;
     *outlen = numlen;
-    return 1;
+    return KRYPT_OK;
 }
 #endif
 
@@ -171,13 +171,13 @@ krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
     }
     xfree(longs);
     *out = value;
-    return 1;
+    return KRYPT_OK;
 }
 #else
 int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
 {
     int sign;
-    ssize_t hexlen;
+    size_t hexlen;
     uint8_t *absolute;
     int free_abs = 0;
     char *hexnum;
@@ -196,9 +196,9 @@ int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
 	}
     }
 
-    if ((hexlen = krypt_hex_encode(absolute, len, &hexnum)) == -1) {
+    if (krypt_hex_encode(absolute, len, &hexnum, &hexlen) == KRYPT_ERR) {
 	if (free_abs) xfree(absolute);
-	return 0;
+	return KRYPT_ERR;
     }
     
     if (sign) {
@@ -216,7 +216,7 @@ int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
     if (free_abs) xfree(absolute);
     xfree(hexnum);
     xfree(chexnum);
-    return 1;
+    return KRYPT_OK;
 }
 #endif
 
