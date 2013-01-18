@@ -232,7 +232,7 @@ krypt_hex_module_encode(VALUE self, VALUE data)
     len = (size_t) RSTRING_LEN((data));
     bytes = (uint8_t *) RSTRING_PTR((data));
     int_hex_process(bytes, len, KRYPT_HEX_ENCODE, ret);
-    rb_enc_associate(ret, rb_ascii8bit_encoding());
+    rb_enc_associate(ret, rb_usascii_encoding());
     return ret;
 }
 

@@ -367,7 +367,7 @@ krypt_base64_module_encode(int argc, VALUE *argv, VALUE self)
 	krypt_error_raise(eKryptBase64Error, "Processing the value failed.");
 
     ret = rb_str_new((const char *) result, result_len);
-    rb_enc_associate(ret, rb_ascii8bit_encoding());
+    rb_enc_associate(ret, rb_usascii_encoding());
     xfree(result);
     return ret;
 }
