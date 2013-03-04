@@ -1,12 +1,17 @@
 .bundle
+.config
 mkmf.log
 extconf.h
 Makefile
 coverage
 kryptcore.info
 tmp
+pkg
+rdoc
 profile
 ext/krypt/core/doc
+*.gem
+*.rbc
 *.swp
 *.swo
 *~
@@ -14,4 +19,4 @@ ext/krypt/core/doc
 *.o
 .rbx/
 .idea/
-nbproject
+doc/
