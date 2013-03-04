@@ -28,6 +28,9 @@
 
 #include "krypt-core.h"
 
+VALUE mKryptHelper;
+VALUE mKryptHelperString;
+
 #ifndef HAVE_RB_STR_ENCODE
 VALUE
 rb_str_encode(VALUE str, VALUE to, int ecflags, VALUE ecopts)
@@ -235,4 +238,76 @@ int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out)
     return KRYPT_OK;
 }
 #endif
+
+static VALUE
+krypt_helper_string_buffer(VALUE self, VALUE size)
+{
+    return rb_str_buf_new(NUM2LONG(size));
+}
+
+static inline long
+int_check_and_get_len(VALUE s1, VALUE s2)
+{
+    long len = RSTRING_LEN(s1);
+    if (RSTRING_LEN(s2) != len) {
+	rb_raise(eKryptError, "String sizes don't match");
+    }
+    return len;
+}
+
+static inline void
+int_xor(char *source1, char *source2, char *target, long len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+	target[i] = source1[i] ^ source2[i];
+    }
+}
+
+
+static VALUE
+krypt_helper_string_xor(VALUE self, VALUE s1, VALUE s2)
+{
+    long len = int_check_and_get_len(s1, s2);
+    char *result = ALLOCA_N(char, len);
+
+    int_xor(RSTRING_PTR(s1), RSTRING_PTR(s2), result, len);
+    return rb_str_new(result, len);
+}
+
+static VALUE
+krypt_helper_string_xor_bang(VALUE self, VALUE s1, VALUE s2)
+{
+    long len = int_check_and_get_len(s1, s2);
+#ifndef HAVE_RB_STR_PTR_READONLY
+    char *result = RSTRING_PTR(s1);
+#else
+/* Rubinius: We use RUBY_READ_ONLY_STRING, so we can't write to the
+   RSTRING_PTR directly */
+   char *result = rb_str_ptr(s1);
+#endif
+    int_xor(result, RSTRING_PTR(s2), result, len);
+    return s1;
+}
+
+void Init_krypt_helper(void)
+{
+#if 0
+    mKrypt = rb_define_module("Krypt"); /* Let RDoc know */
+#endif
+
+    mKryptHelper = rb_path2class("Krypt::Helper");
+
+    /*
+     * Document-module: Krypt::Helper::String
+     *
+     * Provides features not available in the String class itself to deal
+     * efficiently with binary data.
+     */
+    mKryptHelperString = rb_define_module_under(mKryptHelper, "String");
+
+    rb_define_module_function(mKryptHelperString, "buffer", krypt_helper_string_buffer, 1);
+    rb_define_module_function(mKryptHelperString, "xor", krypt_helper_string_xor, 2);
+    rb_define_module_function(mKryptHelperString, "xor!", krypt_helper_string_xor_bang, 2);
+}
 

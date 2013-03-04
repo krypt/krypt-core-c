@@ -103,6 +103,7 @@ Init_kryptcore(void)
     sKrypt_ID_SORT = rb_intern("sort");
 
     /* Init components */
+    Init_krypt_helper();
     Init_krypt_io();
     Init_krypt_asn1();
     Init_krypt_native_provider();

@@ -55,6 +55,11 @@ struct tm *krypt_gmtime_r(const time_t *tp, struct tm *result);
 #define gmtime_r(t, tm)				krypt_gmtime_r((t), (tm))
 #endif
 
+extern VALUE mKryptHelper;
+extern VALUE mKryptHelperString;
+
+void Init_krypt_helper(void);
+
 int krypt_asn1_encode_bignum(VALUE bignum, uint8_t **out, size_t *len);
 int krypt_asn1_decode_bignum(uint8_t *bytes, size_t len, VALUE *out);
 
