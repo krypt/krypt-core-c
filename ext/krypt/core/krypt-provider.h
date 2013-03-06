@@ -72,15 +72,11 @@ struct krypt_interface_md_st {
 /* Provider */
 struct krypt_provider_st {
     const char *name;
+    void (*init)(krypt_provider *provider, void *args);
+    void (*finalize)(krypt_provider *provider);
     krypt_md *(*md_new_oid)(krypt_provider *provider, const char *oid);
     krypt_md *(*md_new_name)(krypt_provider *provider, const char *name);
 };
-
-/* Can be called from within a provider implementation to indicate errors */
-void krypt_error_add(const char * format, ...);
-
-/* May be used to register a singleton provider upon initialization */
-void krypt_provider_register(krypt_provider *provider);
 
 #endif /* _KRYPT_PROVIDER_H_ */
 
