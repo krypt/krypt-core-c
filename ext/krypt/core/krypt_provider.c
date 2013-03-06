@@ -90,6 +90,15 @@ int_provider_digest_new(krypt_provider *provider, VALUE aryargs)
 }
 
 static VALUE
+krypt_native_provider_name(VALUE self)
+{
+    krypt_provider *provider;
+
+    int_krypt_native_provider_get(self, provider);
+    return rb_str_new2(provider->name);
+}
+
+static VALUE
 krypt_native_provider_new_service(int argc, VALUE *argv, VALUE self)
 {
     VALUE service_class;
@@ -106,15 +115,24 @@ krypt_native_provider_new_service(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
-void
+static VALUE
+krypt_native_provider_finalize(VALUE self)
+{
+    /* do nothing */
+    return Qnil;
+}
+
+static void
 krypt_provider_register(krypt_provider *provider)
 {
     VALUE rb_provider;
     if (!provider->name) rb_raise(eKryptError, "Provider must have a name");
 
     rb_provider = krypt_native_provider_new(provider);
-    rb_funcall(mKryptProvider, sKrypt_ID_register, 2, rb_str_new2(provider->name), rb_provider);
+    rb_funcall(mKryptProvider, sKrypt_ID_register, 1, rb_provider);
 }
+
+extern krypt_provider *krypt_ossl_get_provider(void);
 
 void
 Init_krypt_native_provider(void)
@@ -123,6 +141,7 @@ Init_krypt_native_provider(void)
     mKrypt = rb_define_module("Krypt"); /* Let RDoc know */
     mKryptProvider = rb_define_module_under(mKrypt, "Provider"); /* Let RDoc know */
 #endif
+    krypt_provider *ossl;
 
     mKryptProvider = rb_path2class("Krypt::Provider");
     sKrypt_ID_register = rb_intern("register");
@@ -130,7 +149,15 @@ Init_krypt_native_provider(void)
 
     cKryptNativeProvider = rb_define_class_under(mKryptProvider, "NativeProvider", rb_cObject);
 
+    rb_define_method(cKryptNativeProvider, "name", krypt_native_provider_name, 0);
     rb_define_method(cKryptNativeProvider, "new_service", krypt_native_provider_new_service, -1);
+    rb_define_method(cKryptNativeProvider, "finalize", krypt_native_provider_finalize, 0);
     rb_undef_method(CLASS_OF(cKryptNativeProvider), "new"); /* private constructor */	
+
+
+    /* TODO: remove */
+    ossl = krypt_ossl_get_provider();
+    ossl->init(ossl, NULL);
+    krypt_provider_register(ossl);
 }
 
