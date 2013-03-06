@@ -2,7 +2,6 @@ require 'rake'
 require 'rake/extensiontask'
 require 'rspec/core/rake_task'
 require 'rdoc/task'
-require_relative 'lib/krypt-core/version'
 
 KRYPT_HOME = '../krypt'
 
@@ -70,7 +69,7 @@ task 'build-profiler' => ['enable-profiler', 'build']
   
 Rake::RDocTask.new("doc") do |rdoc|
   rdoc.rdoc_dir = 'doc'
-  rdoc.title = "Krypt-Core API: Version #{Krypt::CORE_VERSION}"
+  rdoc.title = "Krypt-Core API"
   rdoc.rdoc_files.include('README.rdoc')
   rdoc.rdoc_files.include('ext/**/*')
 end
