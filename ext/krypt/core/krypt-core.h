@@ -60,17 +60,12 @@ extern ID sKrypt_ID_EQUALS;
 extern ID sKrypt_ID_SORT_BANG;
 extern ID sKrypt_ID_SORT;
 
-/** krypt-provider interface */
-#include "krypt-provider.h"
-#include "krypt_provider-internal.h"
-
 /** krypt-core headers **/
 #include "krypt_error.h"
 #include "krypt_missing.h"
 #include "krypt_io.h"
 #include "krypt_asn1.h"
 #include "krypt_asn1_template.h"
-#include "krypt_digest.h"
 
 VALUE krypt_to_der_if_possible(VALUE obj);
 VALUE krypt_to_der(VALUE obj);

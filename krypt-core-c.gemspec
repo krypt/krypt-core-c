@@ -14,8 +14,7 @@ Gem::Specification.new do |s|
   s.required_ruby_version     = '>= 1.9.3'
 
   s.extensions << 'ext/krypt/core/extconf.rb'
-  s.files = %w(LICENSE) + Dir.glob('{bin,ext,lib,spec,test}/**/*')
-  s.test_files = Dir.glob('test/**/test_*.rb')
+  s.files = %w(Rakefile LICENSE README.rdoc) + Dir.glob('{ext,lib}/**/*')
   s.require_path = "lib"
   s.license = 'MIT'
 

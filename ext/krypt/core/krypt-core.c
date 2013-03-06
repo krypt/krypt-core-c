@@ -106,6 +106,4 @@ Init_kryptcore(void)
     Init_krypt_helper();
     Init_krypt_io();
     Init_krypt_asn1();
-    Init_krypt_native_provider();
-    Init_krypt_digest();
 }
