@@ -105,8 +105,8 @@ int_asn1_header_new(binyo_instream *in, krypt_asn1_header *header)
     parsed_header->tag_class = ID2SYM(tag_class);
     parsed_header->constructed = header->is_constructed ? Qtrue : Qfalse;
     parsed_header->infinite = header->is_infinite ? Qtrue : Qfalse;
-    parsed_header->length = LONG2NUM(header->length);
-    parsed_header->header_length = LONG2NUM(header->tag_len + header->length_len);
+    parsed_header->length = SIZET2NUM(header->length);
+    parsed_header->header_length = SIZET2NUM(header->tag_len + header->length_len);
     parsed_header->in = in;
     parsed_header->header = header;
     parsed_header->value = Qnil;

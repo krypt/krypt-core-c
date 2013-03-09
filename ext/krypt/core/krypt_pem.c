@@ -118,7 +118,7 @@ krypt_pem_decode(VALUE self, VALUE pem)
 	    if (krypt_pem_get_last_name(in, &name, &len) == BINYO_ERR) goto error;
 	    vname = rb_str_new((const char *) name, len);
 	    xfree(name);
-	    rb_yield_values(3, der, vname, LONG2NUM(i++));
+	    rb_yield_values(3, der, vname, SIZET2NUM(i++));
 	}
 	krypt_pem_continue_stream(in);
     }
