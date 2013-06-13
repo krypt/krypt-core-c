@@ -1,0 +1,9 @@
+[submodule "krypt"]
+	path = submodules/krypt
+	url = git://github.com/krypt/krypt.git
+[submodule "binyo"]
+	path = submodules/binyo
+	url = git://github.com/krypt/binyo
+[submodule "krypt-provider-openssl"]
+	path = submodules/krypt-provider-openssl
+	url = git://github.com/krypt/krypt-provider-openssl

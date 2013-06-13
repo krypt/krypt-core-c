@@ -8,9 +8,9 @@ end
 group :test do
   gem 'rspec'
   gem 'ffi'
-  gem 'krypt',                  :path => File.expand_path('../krypt', File.dirname(__FILE__))
-  gem 'krypt-provider-openssl', :path => File.expand_path('../krypt-provider-openssl', File.dirname(__FILE__))
-  gem 'binyo',                  :path => File.expand_path('../binyo', File.dirname(__FILE__))
+  gem 'krypt',                  :path => File.expand_path('submodules/krypt', File.dirname(__FILE__))
+  gem 'krypt-provider-openssl', :path => File.expand_path('submodules/krypt-provider-openssl', File.dirname(__FILE__))
+  gem 'binyo',                  :path => File.expand_path('submodules/binyo', File.dirname(__FILE__))
 end
 
 gemspec

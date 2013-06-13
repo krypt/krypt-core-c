@@ -3,7 +3,7 @@ require 'rake/extensiontask'
 require 'rspec/core/rake_task'
 require 'rdoc/task'
 
-KRYPT_HOME = '../krypt'
+KRYPT_HOME = 'submodules/krypt'
 
 $config_options = []
 
