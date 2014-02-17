@@ -29,8 +29,6 @@
 #if !defined(_KRYPT_CORE_H_)
 #define _KRYPT_CORE_H_
 
-#include RUBY_EXTCONF_H
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -38,11 +36,6 @@ extern "C" {
 #define RSTRING_NOT_MODIFIED 1
 #define RUBY_READONLY_STRING 1
 
-#include <ruby.h>
-
-#if defined(HAVE_RUBY_IO_H)
-#include <ruby/io.h>
-#endif
 
 /* This is just a precaution to take remind us of thread safety
  * issues in case there would be no GVL */ 
