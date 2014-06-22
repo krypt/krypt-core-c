@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#include "ruby.h"
+
 #define RSTRING_NOT_MODIFIED 1
 #define RUBY_READONLY_STRING 1
 
